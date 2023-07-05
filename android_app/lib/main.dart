@@ -41,7 +41,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
     return  MaterialApp(
       home: Scaffold(
       appBar: AppBar(
-        title: const Text('Sample Code'),
+        title: const Text('IoT Projec Unical'),
       ),
       body: Center(
         child: Column(
