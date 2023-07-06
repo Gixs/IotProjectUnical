@@ -114,7 +114,7 @@ class MqttHandler with ChangeNotifier {
               'MQTT_LOGS:: Vecchio log: New data arrived: topic is <${c[0]
                   .topic}>, payload is $pt');
           print(
-              'MQTT_LOGS:: New data arrived: topic is <${sensor
+              'MQTT_LOGS:: New data arrived: sensor is <${sensor
                   .sensor}>, payload is $sensor.sensorValue');
           print('');
         }
