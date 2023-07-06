@@ -1,0 +1,2038 @@
+[
+    {
+        "id": "eb9c6e09542adb97",
+        "type": "tab",
+        "label": "Main flow",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "96fe7c80035069e4",
+        "type": "subflow",
+        "name": "D001 - Dashboard",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 140,
+                "y": 240,
+                "wires": [
+                    {
+                        "id": "7281897ee8902938"
+                    }
+                ]
+            }
+        ],
+        "out": [],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "2a5101df4b5f2078",
+        "type": "subflow",
+        "name": "Encrypt and store",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 100,
+                "y": 220,
+                "wires": [
+                    {
+                        "id": "7e7218345c373401"
+                    },
+                    {
+                        "id": "ae0e10878d61a9aa"
+                    }
+                ]
+            }
+        ],
+        "out": [],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "10dedd7e402cba09",
+        "type": "subflow",
+        "name": "Take data from UI",
+        "info": "",
+        "category": "",
+        "in": [],
+        "out": [],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "33250345171f8ece",
+        "type": "subflow",
+        "name": "Query and decrypt",
+        "info": "",
+        "category": "",
+        "in": [],
+        "out": [
+            {
+                "x": 1240,
+                "y": 140,
+                "wires": []
+            }
+        ],
+        "env": [],
+        "meta": {},
+        "color": "#DDAA99"
+    },
+    {
+        "id": "028ec634bd57ed62",
+        "type": "tls-config",
+        "name": "",
+        "cert": "/etc/mosquitto/certs/cert.pem",
+        "key": "/etc/mosquitto/certs/privkey.pem",
+        "ca": "/etc/mosquitto/certs/chain.pem",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "iotprojectunical.me",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "c5b4f88dc9757dd5",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "iotprojectunical.me",
+        "port": "8883",
+        "tls": "028ec634bd57ed62",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "791791fcaef5e256",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "localhost",
+        "port": "3306",
+        "db": "mysql",
+        "tz": "GMT",
+        "charset": "UTF8"
+    },
+    {
+        "id": "8e642169f7b0d024",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey",
+                "palette": "light"
+            }
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "false",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "6842c5d19ddb1e3c",
+        "type": "ui_group",
+        "z": "96fe7c80035069e4",
+        "name": "Temperature",
+        "tab": "521e0f20823645e8",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "2685a89fcebfbb06",
+        "type": "ui_tab",
+        "name": "Query database",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "521e0f20823645e8",
+        "type": "ui_tab",
+        "z": "96fe7c80035069e4",
+        "name": "Device D001 - Arduino UNO, ESP8266",
+        "icon": "fa-microchip",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "4cd92294622570df",
+        "type": "ui_group",
+        "z": "96fe7c80035069e4",
+        "name": "Humidity",
+        "tab": "521e0f20823645e8",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "96386246e7f9c3a3",
+        "type": "ui_group",
+        "name": "User Input",
+        "tab": "2685a89fcebfbb06",
+        "order": 1,
+        "disp": true,
+        "width": "12",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "179bd29a7649d6ba",
+        "type": "ui_group",
+        "name": "Query result",
+        "tab": "2685a89fcebfbb06",
+        "order": 2,
+        "disp": true,
+        "width": "12",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "7281897ee8902938",
+        "type": "switch",
+        "z": "96fe7c80035069e4",
+        "name": "",
+        "property": "payload.sensor",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "temperature",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "air",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 350,
+        "y": 240,
+        "wires": [
+            [
+                "e283dd2ec55874f7"
+            ],
+            [
+                "77c80bae0c7c4dcd"
+            ]
+        ]
+    },
+    {
+        "id": "48291f86e59cd11e",
+        "type": "ui_text",
+        "z": "96fe7c80035069e4",
+        "group": "6842c5d19ddb1e3c",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "Temperature",
+        "label": "Last temperature value: ",
+        "format": "{{value}}°",
+        "layout": "col-center",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "x": 910,
+        "y": 140,
+        "wires": [],
+        "icon": "font-awesome/fa-send"
+    },
+    {
+        "id": "81e9049ad2caf9af",
+        "type": "comment",
+        "z": "96fe7c80035069e4",
+        "name": "(Temperature)",
+        "info": "",
+        "x": 890,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "3406bb1fe342eb92",
+        "type": "ui_chart",
+        "z": "96fe7c80035069e4",
+        "name": "Temperature",
+        "group": "6842c5d19ddb1e3c",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "label": "Temperature Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "No VALUE",
+        "dot": true,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "3",
+        "removeOlderPoints": "30",
+        "removeOlderUnit": "86400",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 910,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "77c80bae0c7c4dcd",
+        "type": "calculator",
+        "z": "96fe7c80035069e4",
+        "name": "ceil()",
+        "inputMsgField": "payload.value",
+        "outputMsgField": "payload",
+        "operation": "rdec",
+        "constant": "0",
+        "round": false,
+        "decimals": 0,
+        "x": 630,
+        "y": 320,
+        "wires": [
+            [
+                "52511e0fab5ad2e9",
+                "ba1450b769509645"
+            ]
+        ]
+    },
+    {
+        "id": "52511e0fab5ad2e9",
+        "type": "ui_text",
+        "z": "96fe7c80035069e4",
+        "group": "4cd92294622570df",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "Air Quality",
+        "label": "Air Quality value: ",
+        "format": "{{value}}",
+        "layout": "col-center",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "x": 970,
+        "y": 400,
+        "wires": [],
+        "icon": "font-awesome/fa-send"
+    },
+    {
+        "id": "18c4c8e95ceb3ca2",
+        "type": "comment",
+        "z": "96fe7c80035069e4",
+        "name": "(Air Quality)",
+        "info": "",
+        "x": 950,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "ba1450b769509645",
+        "type": "ui_chart",
+        "z": "96fe7c80035069e4",
+        "name": "Air Quality",
+        "group": "4cd92294622570df",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "label": "Air Quality Graph",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "No VALUE",
+        "dot": true,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "3",
+        "removeOlderPoints": "30",
+        "removeOlderUnit": "86400",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 970,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e283dd2ec55874f7",
+        "type": "calculator",
+        "z": "96fe7c80035069e4",
+        "name": "ceil()",
+        "inputMsgField": "payload.value",
+        "outputMsgField": "payload",
+        "operation": "rdec",
+        "constant": "2",
+        "round": false,
+        "decimals": 0,
+        "x": 630,
+        "y": 140,
+        "wires": [
+            [
+                "48291f86e59cd11e",
+                "3406bb1fe342eb92"
+            ]
+        ]
+    },
+    {
+        "id": "0eaf48cd4a118dcf",
+        "type": "mysql",
+        "z": "2a5101df4b5f2078",
+        "mydb": "791791fcaef5e256",
+        "name": "",
+        "x": 770,
+        "y": 440,
+        "wires": [
+            [
+                "f55c1155c51418a5"
+            ]
+        ]
+    },
+    {
+        "id": "7e7218345c373401",
+        "type": "change",
+        "z": "2a5101df4b5f2078",
+        "name": "3 changes",
+        "rules": [
+            {
+                "t": "set",
+                "p": "MQTTtopic",
+                "pt": "msg",
+                "to": "topic",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.sensor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "sensor",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "3a1ad89758246be5",
+                "d6f4295f9d222bf0"
+            ]
+        ]
+    },
+    {
+        "id": "ae0e10878d61a9aa",
+        "type": "change",
+        "z": "2a5101df4b5f2078",
+        "name": "Add key to message",
+        "rules": [
+            {
+                "t": "set",
+                "p": "MQTTtopic",
+                "pt": "msg",
+                "to": "topic",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "key",
+                "pt": "msg",
+                "to": "key",
+                "tot": "global"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.value",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "value",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 400,
+        "y": 220,
+        "wires": [
+            [
+                "67612a0992425e8f",
+                "93c1a11c2505fce5"
+            ]
+        ]
+    },
+    {
+        "id": "15735ff0696c00ab",
+        "type": "encrypt",
+        "z": "2a5101df4b5f2078",
+        "name": "",
+        "algorithm": "AES",
+        "key": ".",
+        "x": 840,
+        "y": 220,
+        "wires": [
+            [
+                "7d6db0cbc4d46a7f",
+                "f2e7c4b88929f610"
+            ]
+        ]
+    },
+    {
+        "id": "3a1ad89758246be5",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "payload.sensor",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 485,
+        "y": 140,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "fc14a62a514dc90c",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "payload.value",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 685,
+        "y": 260,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "d6f4295f9d222bf0",
+        "type": "join",
+        "z": "2a5101df4b5f2078",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": ",",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 1050,
+        "y": 140,
+        "wires": [
+            [
+                "3863cac084c2564f",
+                "f5a70ae39cdd8854"
+            ]
+        ]
+    },
+    {
+        "id": "3863cac084c2564f",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "JOIN",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1170,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "7d6db0cbc4d46a7f",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "Message encrypted 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 885,
+        "y": 260,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "67612a0992425e8f",
+        "type": "string",
+        "z": "2a5101df4b5f2078",
+        "name": "",
+        "methods": [
+            {
+                "name": "toString",
+                "params": []
+            }
+        ],
+        "prop": "payload",
+        "propout": "payload",
+        "object": "msg",
+        "objectout": "msg",
+        "x": 650,
+        "y": 220,
+        "wires": [
+            [
+                "15735ff0696c00ab",
+                "fc14a62a514dc90c"
+            ]
+        ]
+    },
+    {
+        "id": "93c1a11c2505fce5",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "payload.value",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 475,
+        "y": 260,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "f5a70ae39cdd8854",
+        "type": "function",
+        "z": "2a5101df4b5f2078",
+        "name": "function 2",
+        "func": "var device = msg.MQTTtopic;\n\nvar sensor = msg.payload.sensor; \nvar value = msg.payload.value;\n\nmsg.topic = `USE sensors; INSERT INTO Readings(device, datetime, sensor, value) VALUES('${device}', NOW(), '${sensor}', '${value}');`\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 380,
+        "wires": [
+            [
+                "0eaf48cd4a118dcf",
+                "92620f79248c80a3"
+            ]
+        ]
+    },
+    {
+        "id": "f55c1155c51418a5",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "mysql",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 970,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "92620f79248c80a3",
+        "type": "debug",
+        "z": "2a5101df4b5f2078",
+        "name": "function 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1120,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "26bc45306b5fd38f",
+        "type": "comment",
+        "z": "2a5101df4b5f2078",
+        "name": ">> MQTT >> Encrypt >> MySQL",
+        "info": "",
+        "x": 690,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "f2e7c4b88929f610",
+        "type": "change",
+        "z": "2a5101df4b5f2078",
+        "name": "",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "key",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 920,
+        "y": 180,
+        "wires": [
+            [
+                "d6f4295f9d222bf0"
+            ]
+        ]
+    },
+    {
+        "id": "81ed59b11d465a35",
+        "type": "mysql",
+        "z": "33250345171f8ece",
+        "mydb": "791791fcaef5e256",
+        "name": "",
+        "x": 930,
+        "y": 160,
+        "wires": [
+            [
+                "12a10b4e5e8e8190"
+            ]
+        ]
+    },
+    {
+        "id": "ff9a08aecd044526",
+        "type": "function",
+        "z": "33250345171f8ece",
+        "name": "Generate Query",
+        "func": "var startQuery = msg.startQuery;\nvar endQuery = msg.endQuery;\nvar sensor = msg.sensor;\nvar device = msg.device;\n\nif (device === undefined){\n    device = global.device;\n}\nglobal.device = device;\n\nif (sensor === undefined){\n    sensor = global.sensor;\n}\nglobal.sensor = sensor;\n\nif (startQuery === undefined){\n    startQuery = global.startDate;\n}\nglobal.startDate = startQuery;\n\nif (endQuery === undefined) {\n    endQuery = global.endDate;\n}\nglobal.endDate = endQuery;\n\nmsg.topic = `USE sensors; SELECT * FROM Readings WHERE device='${device}' AND sensor='${sensor}' AND datetime>='${startQuery}' AND datetime<'${endQuery}';`\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 160,
+        "wires": [
+            [
+                "81ed59b11d465a35",
+                "a9188fce58c64738"
+            ]
+        ]
+    },
+    {
+        "id": "a9188fce58c64738",
+        "type": "debug",
+        "z": "33250345171f8ece",
+        "name": "Generate query",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 835,
+        "y": 120,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "9d9cc0ce267d4569",
+        "type": "split",
+        "z": "33250345171f8ece",
+        "name": "",
+        "splt": "1",
+        "spltType": "len",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 950,
+        "y": 240,
+        "wires": [
+            [
+                "470718e51344608f"
+            ]
+        ]
+    },
+    {
+        "id": "12a10b4e5e8e8190",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.1",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1040,
+        "y": 200,
+        "wires": [
+            [
+                "9d9cc0ce267d4569"
+            ]
+        ]
+    },
+    {
+        "id": "acf229f725c19302",
+        "type": "decrypt",
+        "z": "33250345171f8ece",
+        "name": "",
+        "algorithm": "AES",
+        "key": ".",
+        "x": 760,
+        "y": 320,
+        "wires": [
+            [
+                "06e384a9b077863d"
+            ]
+        ]
+    },
+    {
+        "id": "470718e51344608f",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "Add key to message",
+        "rules": [
+            {
+                "t": "set",
+                "p": "key",
+                "pt": "msg",
+                "to": "key",
+                "tot": "global"
+            },
+            {
+                "t": "set",
+                "p": "oldPayload",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.value",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 840,
+        "y": 280,
+        "wires": [
+            [
+                "acf229f725c19302"
+            ]
+        ]
+    },
+    {
+        "id": "7f27629bf7de7180",
+        "type": "debug",
+        "z": "33250345171f8ece",
+        "name": "from decr",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "06e384a9b077863d",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "oldPayload.value",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "oldPayload",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "oldPayload",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "key",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "topic",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "startQuery",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "endQuery",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 720,
+        "y": 360,
+        "wires": [
+            [
+                "7f27629bf7de7180",
+                "e8270486405b1429",
+                "0f7a34da0e5d9f97"
+            ]
+        ]
+    },
+    {
+        "id": "19bf5fd81e5bc873",
+        "type": "ui_date_picker",
+        "z": "33250345171f8ece",
+        "name": "",
+        "label": "End Date",
+        "group": "96386246e7f9c3a3",
+        "order": 4,
+        "width": 6,
+        "height": 1,
+        "passthru": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "className": "",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "376d241894fa9591"
+            ]
+        ]
+    },
+    {
+        "id": "92f3c9dffa18af31",
+        "type": "ui_date_picker",
+        "z": "33250345171f8ece",
+        "name": "",
+        "label": "Starting Date",
+        "group": "96386246e7f9c3a3",
+        "order": 3,
+        "width": 6,
+        "height": 1,
+        "passthru": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "className": "",
+        "x": 190,
+        "y": 80,
+        "wires": [
+            [
+                "75b7be8f8d770551"
+            ]
+        ]
+    },
+    {
+        "id": "91de52b1140e48fe",
+        "type": "ui_button",
+        "z": "33250345171f8ece",
+        "name": "",
+        "group": "96386246e7f9c3a3",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Query DB",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "true",
+        "payloadType": "str",
+        "topic": "button",
+        "topicType": "str",
+        "x": 180,
+        "y": 160,
+        "wires": [
+            [
+                "a00fa4e66dbb9901",
+                "fbe9d452353e5f8d"
+            ]
+        ]
+    },
+    {
+        "id": "75b7be8f8d770551",
+        "type": "date-converter",
+        "z": "33250345171f8ece",
+        "name": "",
+        "topic": "startQuery",
+        "input": "payload",
+        "inputType": "msg",
+        "inTz": "",
+        "adjAmount": 0,
+        "adjType": "days",
+        "adjDir": "add",
+        "format": "",
+        "locale": "",
+        "output": "startQuery",
+        "outputType": "msg",
+        "outTz": "",
+        "x": 370,
+        "y": 80,
+        "wires": [
+            [
+                "3826985027e63e4b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "376d241894fa9591",
+        "type": "date-converter",
+        "z": "33250345171f8ece",
+        "name": "",
+        "topic": "endQuery",
+        "input": "payload",
+        "inputType": "msg",
+        "inTz": "",
+        "adjAmount": 0,
+        "adjType": "days",
+        "adjDir": "add",
+        "format": "",
+        "locale": "",
+        "output": "endQuery",
+        "outputType": "msg",
+        "outTz": "",
+        "x": 360,
+        "y": 120,
+        "wires": [
+            [
+                "3826985027e63e4b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "3826985027e63e4b",
+        "type": "join",
+        "z": "33250345171f8ece",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "",
+        "propertyType": "full",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 590,
+        "y": 160,
+        "wires": [
+            [
+                "ff9a08aecd044526",
+                "0b3425731384b803"
+            ]
+        ]
+    },
+    {
+        "id": "c19381a56c02f850",
+        "type": "ui_table",
+        "z": "33250345171f8ece",
+        "group": "179bd29a7649d6ba",
+        "name": "",
+        "order": 6,
+        "width": 12,
+        "height": 8,
+        "columns": [],
+        "outputs": 1,
+        "cts": true,
+        "x": 530,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e8270486405b1429",
+        "type": "join",
+        "z": "33250345171f8ece",
+        "name": "",
+        "mode": "auto",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": true,
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 630,
+        "y": 400,
+        "wires": [
+            [
+                "c19381a56c02f850",
+                "a7c83c327477ea60"
+            ]
+        ]
+    },
+    {
+        "id": "a7c83c327477ea60",
+        "type": "debug",
+        "z": "33250345171f8ece",
+        "name": "Another join",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "b4e8f120a2bbe130",
+        "type": "catch",
+        "z": "33250345171f8ece",
+        "name": "Catch query error",
+        "scope": [
+            "81ed59b11d465a35"
+        ],
+        "uncaught": false,
+        "x": 160,
+        "y": 540,
+        "wires": [
+            [
+                "fbe9d452353e5f8d",
+                "02c051e83ed051d7"
+            ]
+        ]
+    },
+    {
+        "id": "fbe9d452353e5f8d",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "Reset table",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "[]",
+                "tot": "json"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 370,
+        "y": 440,
+        "wires": [
+            [
+                "c19381a56c02f850",
+                "dc39e07bbc6544c5"
+            ]
+        ]
+    },
+    {
+        "id": "69fad790bffb8b50",
+        "type": "ui_toast",
+        "z": "33250345171f8ece",
+        "position": "dialog",
+        "displayTime": "3",
+        "highlight": "",
+        "sendall": true,
+        "outputs": 1,
+        "ok": "OK",
+        "cancel": "",
+        "raw": false,
+        "className": "",
+        "topic": "",
+        "name": "Show error in dialog",
+        "x": 560,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "02c051e83ed051d7",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "error.message",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 540,
+        "wires": [
+            [
+                "69fad790bffb8b50"
+            ]
+        ]
+    },
+    {
+        "id": "a00fa4e66dbb9901",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "complete",
+                "pt": "msg",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 390,
+        "y": 160,
+        "wires": [
+            [
+                "3826985027e63e4b"
+            ]
+        ]
+    },
+    {
+        "id": "0b3425731384b803",
+        "type": "debug",
+        "z": "33250345171f8ece",
+        "name": "date join",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 615,
+        "y": 120,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "d40d2a54c58c2500",
+        "type": "ui_dropdown",
+        "z": "33250345171f8ece",
+        "name": "",
+        "label": "",
+        "tooltip": "",
+        "place": "Select sensor...",
+        "group": "96386246e7f9c3a3",
+        "order": 2,
+        "width": 6,
+        "height": 1,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "Air",
+                "value": "air",
+                "type": "str"
+            },
+            {
+                "label": "Temperature",
+                "value": "temperature",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "sensor",
+        "topicType": "str",
+        "className": "",
+        "x": 180,
+        "y": 200,
+        "wires": [
+            [
+                "369cab0d6dcd3541"
+            ]
+        ]
+    },
+    {
+        "id": "369cab0d6dcd3541",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "sensor",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 380,
+        "y": 200,
+        "wires": [
+            [
+                "3826985027e63e4b"
+            ]
+        ]
+    },
+    {
+        "id": "a3d19eec5581545b",
+        "type": "ui_dropdown",
+        "z": "33250345171f8ece",
+        "name": "",
+        "label": "",
+        "tooltip": "",
+        "place": "Select device...",
+        "group": "96386246e7f9c3a3",
+        "order": 1,
+        "width": 6,
+        "height": 1,
+        "passthru": false,
+        "multiple": false,
+        "options": [
+            {
+                "label": "Device #001",
+                "value": "D001",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "device",
+        "topicType": "str",
+        "className": "",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "d2dbecb42c075d9a"
+            ]
+        ]
+    },
+    {
+        "id": "d2dbecb42c075d9a",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "device",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "device",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 380,
+        "y": 240,
+        "wires": [
+            [
+                "3826985027e63e4b"
+            ]
+        ]
+    },
+    {
+        "id": "0f7a34da0e5d9f97",
+        "type": "change",
+        "z": "33250345171f8ece",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "timestamp",
+                "pt": "msg",
+                "to": "payload.datetime",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "payload.sensor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.value",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "sensor",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "event",
+                "pt": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "parts",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1140,
+        "y": 360,
+        "wires": [
+            [
+                "82d4da97a66c2e63",
+                "dc39e07bbc6544c5"
+            ]
+        ]
+    },
+    {
+        "id": "dc39e07bbc6544c5",
+        "type": "ui_chart",
+        "z": "33250345171f8ece",
+        "name": "Chart",
+        "group": "96386246e7f9c3a3",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "label": "{{msg.topic}}",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "dd HH:mm",
+        "interpolate": "bezier",
+        "nodata": "Waiting for query result...",
+        "dot": true,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "3",
+        "removeOlderPoints": "100",
+        "removeOlderUnit": "86400",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": true,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1230,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "82d4da97a66c2e63",
+        "type": "debug",
+        "z": "33250345171f8ece",
+        "name": "prejoin",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1230,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "9cfb97a2c7236430",
+        "type": "debug",
+        "z": "eb9c6e09542adb97",
+        "name": "Msg from nodered (topic = nodered)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 185,
+        "y": 240,
+        "wires": [],
+        "l": false
+    },
+    {
+        "id": "1e7fa4b13aa18d08",
+        "type": "mqtt in",
+        "z": "eb9c6e09542adb97",
+        "name": "MQTT subscribe to all (#)",
+        "topic": "#",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "c5b4f88dc9757dd5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 280,
+        "wires": [
+            [
+                "9cfb97a2c7236430",
+                "26e51abe063b19b5",
+                "f924b757df91421f"
+            ]
+        ]
+    },
+    {
+        "id": "e15f6a7d7e32019c",
+        "type": "inject",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 100,
+        "wires": [
+            [
+                "342cce9c85ac38e4"
+            ]
+        ]
+    },
+    {
+        "id": "342cce9c85ac38e4",
+        "type": "file in",
+        "z": "eb9c6e09542adb97",
+        "name": "File with key",
+        "filename": "/home/gixs/key_aes/key.dat",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 370,
+        "y": 100,
+        "wires": [
+            [
+                "7fca36d0da15a9fb"
+            ]
+        ]
+    },
+    {
+        "id": "7fca36d0da15a9fb",
+        "type": "change",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "key",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 540,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "26e51abe063b19b5",
+        "type": "subflow:96fe7c80035069e4",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "x": 470,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "f924b757df91421f",
+        "type": "subflow:2a5101df4b5f2078",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "x": 470,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "b1fc444cbe36e8af",
+        "type": "comment",
+        "z": "eb9c6e09542adb97",
+        "name": "Inject the key in the system",
+        "info": "",
+        "x": 370,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "c14671bfca657f37",
+        "type": "decrypt",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "algorithm": "AES",
+        "key": ".",
+        "x": 520,
+        "y": 1100,
+        "wires": [
+            [
+                "20d486cf1620d766"
+            ]
+        ]
+    },
+    {
+        "id": "bc4acb3555e489f7",
+        "type": "change",
+        "z": "eb9c6e09542adb97",
+        "name": "Add key to message",
+        "rules": [
+            {
+                "t": "set",
+                "p": "key",
+                "pt": "msg",
+                "to": "key",
+                "tot": "global"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "U2FsdGVkX1+qfdyHk4Uyq+7matqTu+cS3zCtunBo80E=",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 320,
+        "y": 1100,
+        "wires": [
+            [
+                "c14671bfca657f37",
+                "4e4ba685ed36588d"
+            ]
+        ]
+    },
+    {
+        "id": "bfba88e272b7d4a3",
+        "type": "inject",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "U2FsdGVkX1/Ti6NSO4rG1nYFz4E2DX27AQ5rv0Es4WU=",
+        "payloadType": "str",
+        "x": 130,
+        "y": 1100,
+        "wires": [
+            [
+                "bc4acb3555e489f7"
+            ]
+        ]
+    },
+    {
+        "id": "20d486cf1620d766",
+        "type": "debug",
+        "z": "eb9c6e09542adb97",
+        "name": "from decr2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "4e4ba685ed36588d",
+        "type": "debug",
+        "z": "eb9c6e09542adb97",
+        "name": "pre decr2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "ad83c0f656046cbc",
+        "type": "inject",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 940,
+        "y": 1100,
+        "wires": [
+            [
+                "811dfe412289bb8b"
+            ]
+        ]
+    },
+    {
+        "id": "811dfe412289bb8b",
+        "type": "mqtt out",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "topic": "nodered",
+        "qos": "2",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "c5b4f88dc9757dd5",
+        "x": 1060,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "efce2664bbc51d65",
+        "type": "subflow:33250345171f8ece",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "x": 470,
+        "y": 360,
+        "wires": [
+            [
+                "66996d6edf0532e2"
+            ]
+        ]
+    },
+    {
+        "id": "66996d6edf0532e2",
+        "type": "mqtt out",
+        "z": "eb9c6e09542adb97",
+        "name": "",
+        "topic": "Actuation",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "c5b4f88dc9757dd5",
+        "x": 740,
+        "y": 360,
+        "wires": []
+    }
+]
