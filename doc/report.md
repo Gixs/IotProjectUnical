@@ -1,4 +1,10 @@
-# IoT Security Project (pre)Report <!-- omit in toc -->
+# IoT Security Project Report <!-- omit in toc -->
+
+## ***Luigi Rachiele*** - Computer Engineering of IoT - ***214894*** <!-- omit in toc -->
+
+***
+
+## Table of Contents <!-- omit in toc -->
 
 - [Intro](#intro)
 - [Project Scope](#project-scope)
@@ -8,6 +14,7 @@
     - [**Sensors** and **ADC**](#sensors-and-adc)
     - [UART](#uart)
   - [ESP8266](#esp8266)
+    - [main.cpp](#maincpp)
 - [Cloud](#cloud)
     - [SSH Key](#ssh-key)
     - [Ubuntu UFW](#ubuntu-ufw)
@@ -190,6 +197,19 @@ void UART_sendChar(char data)
 ### ESP8266
 
 The ESP8266 receives from the UART the data from the Arduino UNO and sends it using the Trasport Layer Security (TLS). The connection to the cloud is established using the MQTT (Message Queuing Telemetry Transport) protocol enriched with the TLS (Transport Layer Security) security protocol. This combination ensures a secure and protected connection between the ESP8266 device and the cloud. By using the generated certificates and stored in the device flash memory, the ESP8266 device can establish a secure connection with the cloud. These certificates allow for the verification of the device and server identities in the TLS handshake process, thereby preventing potential man-in-the-middle attacks.
+
+The ESP8266 code is composed by 3 parts:
+- *ConnectionManager*: this module manage the certs file acquiring the MQTT connection using TLS.
+- *Service*: the goal of this part is to actually create the MQTT Client;
+- *main*: this is the main part where the flow of data goes through.
+
+#### main.cpp
+
+This module describe the *main* part of the sketch.
+It takes all the *secrets* information, that are loaded in the Flash Memory of the ESP8266 and build the MQTT client.
+
+Once the connection is enstablished, the ESP8266 has one and only task: forward the serial message received by the Arduino board to the MQTT Broker.
+To do that, the ESP8266 start the serial monitor, scan for messages and when it receives one forward that pubblishing a message in the 'D001' topic.
 
 ## Cloud
 
