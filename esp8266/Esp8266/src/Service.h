@@ -3,7 +3,7 @@
 
 #include <PubSubClient.h>
 
-namespace Iotsec
+namespace Iotlow
 {
 
     static PubSubClient *client = nullptr;

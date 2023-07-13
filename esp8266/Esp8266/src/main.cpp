@@ -51,7 +51,7 @@ const char username[] = TO_STR(USERNAME);
 const char password[] = TO_STR(PASSWORD);
 const char domain[] = TO_STR(DOMAIN_NAME);
 constexpr uint16_t port = PORT;
-Iotsec::ConnectionConfig config;
+Iotlow::ConnectionConfig config;
 
 constexpr int poolPeriod = 500;
 constexpr int loopPeriod = 2000;
@@ -70,23 +70,24 @@ void setup()
   config.ssid = ssid;
   config.username = username;
 
-  Iotsec::connect(config);
-  Iotsec::setMqttClient(Iotsec::mqttClientRef());
+  Iotlow::connect(config);
+  Iotlow::setMqttClient(Iotlow::mqttClientRef());
 }
 
 void loop()
 {
-  if (!Iotsec::isConnected())
+  if (!Iotlow::isConnected())
   {
-    Iotsec::reconnect(config);
+    Iotlow::reconnect(config);
   }
+  Iotlow::client->loop();
 
   if (Serial.available() > 0)
   {
     // read the incoming byte:
     String json = Serial.readStringUntil('\n');
-    Serial.println("JSON ricevuto: " + json);
+    // Serial.println("JSON ricevuto: " + json);
 
-    Iotsec::client->publish("D001", json.c_str());
+    Iotlow::client->publish("STAT/D001", json.c_str());
   }
 }

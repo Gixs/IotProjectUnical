@@ -1,17 +1,61 @@
 #include "ConnectionManager.h"
 #include "certs.h"
 
+#include <ArduinoJson.h>
+
 #include <ESP8266WiFi.h>
 
-namespace Iotsec
+#include <string.h>
+
+namespace Iotlow
 {
 
 	static WiFiClientSecure wifiClient;
 	static PubSubClient mqttClient;
 	static X509List caList;
 
+	void callback(char *topic, byte *payload, unsigned int length)
+	{
+		DynamicJsonDocument doc(1024);
+
+		char json[length];
+
+		for (int i = 0; i < length; i++)
+		{
+			json[i] = (char)payload[i];
+		}
+
+		deserializeJson(doc, json);
+
+		const char *actuator = doc["actuator"];
+		const char *value = doc["value"];
+
+		if (strcmp(actuator, "alarm") == 0)
+		{
+			if (strcmp(value, "on") == 0)
+				Serial.print("0");
+			if (strcmp(value, "off") == 0)
+				Serial.print("1");
+		}
+		if (strcmp(actuator, "buzzer") == 0)
+		{
+			if (strcmp(value, "on") == 0)
+				Serial.print("2");
+			if (strcmp(value, "off") == 0)
+				Serial.print("3");
+		}
+		if (strcmp(actuator, "fan") == 0)
+		{
+			if (strcmp(value, "on") == 0)
+				Serial.print("4");
+			if (strcmp(value, "off") == 0)
+				Serial.print("5");
+		}
+	}
+
 	void connect(ConnectionConfig &config)
 	{
+		Serial.begin(9600);
 		caList.append(cert1);
 		caList.append(cert2);
 		wifiClient.setTrustAnchors(&caList);
@@ -19,6 +63,7 @@ namespace Iotsec
 
 		mqttClient.setServer(config.domain.c_str(), config.port);
 		mqttClient.setClient(wifiClient);
+		mqttClient.setCallback(callback);
 
 		WiFi.mode(WIFI_STA);
 		WiFi.begin(config.ssid, config.key);
@@ -36,6 +81,9 @@ namespace Iotsec
 			attempts++;
 			delay(500);
 		}
+
+		boolean subscrive = mqttClient.subscribe("CMD/D001");
+		Serial.println(subscrive);
 	}
 
 	bool isConnected(void)
@@ -59,6 +107,7 @@ namespace Iotsec
 			attempts++;
 			delay(2000);
 		}
+		mqttClient.subscribe("CMD/D001");
 	}
 
 	PubSubClient &mqttClientRef()
