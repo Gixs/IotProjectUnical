@@ -1,4 +1,6 @@
-# IoT Security Project Report <!-- omit in toc -->
+
+# Smart Lab Sensor <!-- omit in toc -->
+## Low level and Embedded System programming Project Report <!-- omit in toc -->
 
 ## ***Luigi Rachiele*** - Computer Engineering of IoT - ***214894*** <!-- omit in toc -->
 
@@ -10,7 +12,13 @@
 - [Project Scope](#project-scope)
 - [Architecture](#architecture)
 - [Southbound](#southbound)
-  - [Arduino UNO](#arduino-uno)
+  - [Southbound architecture](#southbound-architecture)
+  - [Sensing](#sensing)
+  - [Actuation](#actuation)
+    - [States](#states)
+    - [User to Actuation Interaction](#user-to-actuation-interaction)
+  - [ATmega328p - Arduino uno board](#atmega328p---arduino-uno-board)
+  - [FreeRTOS](#freertos)
     - [**Sensors** and **ADC**](#sensors-and-adc)
     - [UART](#uart)
   - [ESP8266](#esp8266)
@@ -37,19 +45,17 @@
 
 ## Intro
 
-The IoT Security Project Report provides an overview and analysis of the security aspects implemented in an IoT project. As the Internet of Things (IoT) continues to expand, ensuring the security and privacy of connected devices and their data becomes increasingly important.
+The following report provides an overview and analysis of the **Low Level and Embedded** System programming aspects implemented in a project focused on developing a **smart lab sensor**. The primary objective of this project is to create an advanced embedded system capable of detecting the presence of toxic gases and fire incidents in laboratory. The embedded system is designed to enable prompt actions in response to safety alerts, such as activating a fan for air circulation and sounding a buzzer to alert users.
 
-This report delves into the various components of the IoT system, categorized into three main sections: Northbound, Cloud, Southbound, Transport Protocol. Each section represents a distinct aspect of the project and plays a crucial role in the overall security architecture. In addition to the man categories there are other that are no less important like Transport Layer - MQTT, Database. Both are included in the cloud section, but it is important to mention them thanks to their role in the project.
+The project emphasizes the utilization of low-level programming techniques and embedded systems to enhance safety and security measures. By leveraging advanced sensing capabilities, the system can accurately identify the presence of toxic gases and fire incidents, providing timely warnings to mitigate potential risks.
 
-The Southbound category represents the source of the data, which is the physical device in this case. This section explores the specifications, hardware components, and security features implemented in the physical device to ensure protection against physical tampering or unauthorized access.
+The embedded system's architecture and programming techniques are designed to ensure efficient data acquisition, processing, and transmission. Through the use of low-level programming, precise control over the hardware components is achieved, optimizing system resources and enhancing overall performance and reliability.
 
-The Cloud section focuses on the cloud infrastructure. Inside the cloud infrastructure are located also the the MQTT broker, used to facilitate communication between the devices and the cloud, and the database, used to store data. The protocols, security measures, and authentication mechanisms employed to establish a secure and reliable connection are discussed.
+Throughout this report, the implementation details of the embedded system are explored, emphasizing the utilization of low-level programming techniques tailored to the specific requirements of the project. The report also highlights the significance of integrating various sensors, such as temperature sensors, to enhance the system's functionality and improve safety measures.
 
-The Northbound category encompasses the applications that read and interact with the data collected by the IoT system, such as the Android App and NodeRED dashboard. The security measures implemented in these applications for secure user authentication, data visualization, and control over connected devices are analyzed.
+Additionally, the report examines the implementation of actuation mechanisms, including fan activation for air circulation and buzzer activation for alerting users during safety alerts. The utilization of low-level programming ensures efficient control and seamless integration of these actuation mechanisms within the embedded system.
 
-Throughout this report, best practices, challenges faced, and lessons learned in securing an IoT system are highlighted within these three macro categories. By examining the security measures within each category, valuable insights and recommendations for enhancing the overall security posture of IoT projects are provided.
-
-The IoT Security Project Report delves into the details of the Northbound applications, the Cloud, Southbound physical device, uncovering the security measures implemented to protect against potential threats.
+By analyzing the role of low-level programming and embedded systems in the project, this report aims to provide a comprehensive understanding of their importance in developing smart smoke sensors capable of detecting toxic gases and fire incidents. The insights and recommendations derived from this analysis contribute to the broader field of Low Level and Embedded System programming, offering valuable guidance for future research and development in safety-enhancing embedded systems.
 
 ## Project Scope
 
@@ -90,19 +96,92 @@ The overall system architecture is illustrated in the  image. This image provide
 This section provides an overview of the part of the project where data are generated.
 The generation of the data that flow in the architecture are sensed from the external and are in the form of Temperature (°) and Quality of Air.
 The data are sensed using the physical device discussed below.
-The devices used for the project are two:
 
-- Arduino UNO: used for sesnsing the data;
-- ESP8266: used for network interfacing.
+### Southbound architecture
+The Southbound architecture is a crucial component of the embedded system and it is based on the utilization of the ATmega328P microcontroller. It consist of four main parts. It leverages various technologies and modules to enable seamless operation and interaction within the system.
+
+**FreeRTOS**: At the core of the Southbound architecture lies FreeRTOS, a real-time operating system specifically designed for microcontrollers like the ATmega328P. FreeRTOS provides advanced task management, scheduling, and resource handling capabilities, enabling efficient multitasking and optimal utilization of system resources.
+**Sensing**: The sensing part forms an integral component of the Southbound architecture, enabling data acquisition from the environment. It incorporates two sensors, namely TMP36 and MQ135. The TMP36 sensor measures temperature, while the MQ135 sensor detects the presence of toxic gases. These sensors interface directly with the ATmega328P, allowing the system to monitor and respond to environmental changes effectively.
+
+**Actuation**: The actuation part of the Southbound architecture empowers the embedded system to execute appropriate actions based on the collected sensor data. It consists of two actuators, a fan and a buzzer, which are controlled by the ATmega328P. In response to detected hazardous conditions, the system can activate the fan to circulate air and employ the buzzer to provide audible alarms, ensuring prompt and necessary interventions.
+
+**User Interaction**: User interaction is facilitated through an LCD (Liquid Crystal Display) and the integration of an ESP8266 device. The LCD provides a visual interface for displaying relevant information, while the ESP8266 allows the Arduino board to exchange data with the cloud. This capability opens up possibilities for remote monitoring, data logging, and control of the embedded system.
+
+The Southbound architecture brings together these interconnected components, enabling a comprehensive and efficient embedded system. It leverages FreeRTOS for task management, utilizes sensors for data acquisition, employs actuators for response mechanisms, and incorporates user interaction elements for enhanced control and monitoring. Together, these components form a cohesive architecture that ensures reliable and intelligent operation of the embedded system.
 
 <p align="center">
   <img src="images/southbound_architecture.png" alt="Southbound architecture">
 </p>
 
-### Arduino UNO
+### Sensing
+
+### Actuation
+
+The implementation of actuation in your project involves two separate components: a fan for air circulation and a buzzer for alarm signaling. Both of these components operate by utilizing Pulse Width Modulation (PWM) techniques.
+
+The **buzzer**'s PWM modulation is achieved through the utilization of vTaskDelay in FreeRTOS. This allows for precise control over the buzzer's output. On the other hand, the fan's PWM modulation is achieved using a hardware timer of the ATmega328P microcontroller.
+
+The **fan** operates based on the principles of DC motors, and to enable its functionality, additional support components are employed. Firstly, a small DC motor typically requires more power than what the UNO R3 board can directly provide. Attempting to connect the motor directly to a pin of the UNO board would pose a high risk of damaging the board. To address this, a separate power supply is used to ensure the motor receives the appropriate power.
+
+In addition to the power supply, a chip like the *L293D* is utilized to control the motor's operation. The L293D provides the necessary interface between the microcontroller and the motor, allowing for precise control and protection against potential electrical issues.
+
+Lastly, the inclusion of a *optoisolator*, called *4N35*. An optoisolator, also known as an optocoupler, is a device that electrically isolates two circuits while allowing them to communicate through light signals.  The optoisolator consists of an LED (Light-Emitting Diode) on the input side and a phototransistor or a photothyristor on the output side. When a voltage is applied to the input side, the LED emits light, which is detected by the phototransistor/photothyristor on the output side. This optical coupling allows for electrical isolation between the input and output circuits. Power a DC motoro whitout and optoisolator is very dangerous, becaus if the motor changes the polarity, in an inusual way, a negative flow of current goes to the AVR and can cause problem to the chip.
+
+By combining the PWM modulation techniques, appropriate power supply management, motor control chip, and optoisolator, the actuation system in your project ensures efficient and reliable operation of both the fan and the buzzer, serving their respective purposes in the overall functionality of the system.
+
+#### States
+The state the system can ensure are different. The table list every Actuation state.
+
+
+| #   |      Name      |  FreeRTOS Task | What does? |
+|---|:----------:|-----------:|------:|
+| 0 | Alarm ON   | alarmON    |Start alarm. -> Start Buzzer and Fan|
+| 1 | Alarm OFF  | alarmOFF   |Stop alarm. -> Stop Buzzer and Fan|
+| 2 | Buzzer ON  | buzzerTask |Start Buzzer|
+| 3 | Buzzer OFF | buzzerTask |Stop Buzzer|
+| 4 | Fan ON     | fanTask    |Start Fan at Speed 1|
+| 5 | Fan OFF    | fanTask    |Stop Fan|
+| 6 | Fan x2     | fanTask    |Start Fan at Speed 2x|
+
+
+
+
+
+
+#### User to Actuation Interaction
+Through the dashboard interface, users have the ability to issue various commands to the microprocessor, enabling them to perform specific actions. These commands include turning the alarm on and off, activating or deactivating the buzzer, and controlling the fan by turning it on or off.
+
+Each of these commands directly affects the state of the system and is managed through task scheduling using the FreeRTOS operating system. The system comprises different tasks, namely "fanTask," "alarmOn," "alarmOff," and "buzzerTask," which are responsible for executing the corresponding actions based on the received commands.
+
+To facilitate communication between the user and the microprocessor, the MQTT protocol is employed. When a command is sent by the user through the northbound dashboard, it is transmitted via MQTT. The ESP8266, which acts as the MQTT listener, receives the command and forwards it to the Arduino board using the serial port for further processing.
+
+Upon receiving the command through the serial communication, a system interrupt is triggered. This interrupt suspends the execution of other tasks momentarily, prioritizing the handling of the received command. Consequently, the appropriate task is awakened to process the command and carry out the necessary actions.
+
+It's worth noting that the commands can vary in type, depending on the desired state of the system. Each distinct command serves as a trigger to awaken a specific task within the FreeRTOS framework, ensuring efficient and accurate actuation based on the user's input.
+
+### ATmega328p - Arduino uno board
+
+The ATmega328P is an 8-bit, 28-pin, low-power microcontroller manufactured by Atmel. It is the most popular microcontroller used in Arduino boards. The ATmega328P has a maximum clock speed of 20 MHz and 32 KB of flash memory, 2 KB of SRAM, and 1 KB of EEPROM. It also has a wide range of interfaces, including a serial port, a parallel port, a timer, and an analog-to-digital converter.
+
+The ATmega328P is based on the development board Arduino Uno. It is one of the most popular Arduino boards. It is easy to use and has a large community of users and developers who can provide support and assistance.
 
 The **Arduino Uno** acts as a pivotal board housing the ATMega328P microprocessor, providing the necessary computational power for the project. Within the Arduino Uno, several components are employed to facilitate the system's functionality.
 
+In the project are used the ISR (interrupt service routine), PORTB and PORTD and the hardware timer.
+### FreeRTOS
+FreeRTOS plays a crucial role in the embedded system project described, as it manages the Southbound section of the system. Its task management, timing, and inter-process communication features are essential to this project's seamless functioning.
+
+In our project, the smoke sensor's core functions and applications hinge on the efficient use of FreeRTOS. Here, FreeRTOS is tasked with managing the operations of the TMP36 and MQ135 sensors, a fan, a buzzer, an LCD for user interaction, and the ESP8266 device for cloud communication. Each component runs as a separate task in the FreeRTOS environment, enabling simultaneous operation and synchronization.
+
+The TMP36 sensor is used for temperature detection, and the MQ135 sensor is used to detect the presence of harmful gases. When the sensor data exceeds a safety threshold, FreeRTOS ensures the immediate triggering of specific responses - activating the fan for air circulation and turning on the buzzer to alert the user.
+
+//TODO TASK THRESHOLD DOPO IL SENSE
+
+The FreeRTOS scheduler manages these tasks, coordinating the task-switching based on priority and ensuring that the system responds to hazards promptly. It also helps manage the communication with the ESP8266 device, providing a crucial link between the Southbound hardware components and the cloud.
+
+When a message comes from the Northbound to the MQTT Broker the ESP32 send through serial the message received in
+
+The usage of FreeRTOS in this project allows the intelligent smoke sensor to operate efficiently and reliably, responding to real-time changes in the environment while also communicating critical data to the cloud, ensuring safety and promoting smart home automation. Furthermore, it exemplifies the effective use of low-level programming in managing and coordinating multiple hardware components in a single, compact system.
 #### **Sensors** and **ADC**
 
 For the sensing phase, two distinct analogic sensors are utilized: the MQ135 and the TMP36.

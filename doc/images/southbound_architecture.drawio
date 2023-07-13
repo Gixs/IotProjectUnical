@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-06-28T21:59:02.759Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0" etag="PDlOldCZ8-IbUftVeZCu" version="21.5.2" type="device">
+<mxfile host="app.diagrams.net" modified="2023-07-13T13:45:04.649Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" etag="_wKUZ-4_koU_xZiBKALD" version="21.6.2" type="device">
   <diagram name="Pagina-1" id="2EgIE4DmpU0ribxin4y5">
-    <mxGraphModel dx="942" dy="498" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="819" dy="442" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -81,11 +81,11 @@
         <mxCell id="cvRy3syvQBvX0eV_d_cI-17" value="" style="shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#4495D1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.veeam.2d.alarm;" parent="1" vertex="1">
           <mxGeometry x="480" y="220" width="52.8" height="37.6" as="geometry" />
         </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;endArrow=oval;endFill=1;" parent="1" source="cvRy3syvQBvX0eV_d_cI-20" target="cvRy3syvQBvX0eV_d_cI-2" edge="1">
+        <mxCell id="cvRy3syvQBvX0eV_d_cI-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=oval;endFill=1;" parent="1" source="cvRy3syvQBvX0eV_d_cI-20" target="cvRy3syvQBvX0eV_d_cI-2" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="cvRy3syvQBvX0eV_d_cI-20" value="FreeRTOS" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=#ffffff;fillColor=#232F3E;dashed=0;verticalLabelPosition=middle;verticalAlign=bottom;align=center;html=1;whiteSpace=wrap;fontSize=10;fontStyle=1;spacing=3;shape=mxgraph.aws4.productIcon;prIcon=mxgraph.aws4.freertos;" parent="1" vertex="1">
-          <mxGeometry x="370" y="67.75" width="43.64" height="60" as="geometry" />
+          <mxGeometry x="288.18" y="50" width="43.64" height="60" as="geometry" />
         </mxCell>
         <mxCell id="cvRy3syvQBvX0eV_d_cI-23" value="ADC" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="170" y="177" width="50" height="30" as="geometry" />
@@ -105,26 +105,11 @@
         <mxCell id="cvRy3syvQBvX0eV_d_cI-29" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.devices.lcd_monitor;" parent="1" vertex="1">
           <mxGeometry x="350" y="328" width="58" height="48" as="geometry" />
         </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-32" value="I2C" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="339" y="240" width="40" height="30" as="geometry" />
-        </mxCell>
         <mxCell id="cvRy3syvQBvX0eV_d_cI-33" value="LCD 1602 Module" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="319" y="376" width="120" height="30" as="geometry" />
         </mxCell>
         <mxCell id="cvRy3syvQBvX0eV_d_cI-34" value="Buzzer" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
           <mxGeometry x="475" y="259" width="60" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;endArrow=classicThin;endFill=1;" parent="1" source="cvRy3syvQBvX0eV_d_cI-36" target="cvRy3syvQBvX0eV_d_cI-2" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-36" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#434445;aspect=fixed;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.vvd.keyboard;" parent="1" vertex="1">
-          <mxGeometry x="200" y="80" width="50" height="35.5" as="geometry" />
-        </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-38" value="Keyboard Membrane&lt;br&gt;Switch module" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="173.18" y="40" width="140" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="cvRy3syvQBvX0eV_d_cI-40" value="GPIO" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
-          <mxGeometry x="228.18" y="115.5" width="50" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
