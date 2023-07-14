@@ -1,3 +1,11 @@
+    /*-----------------------------------------------------------------------------------------*/
+   //																					      //
+  //             Luigi Rachiele - Low Level and Embedded system programming project		     //
+ //				       																	    //
+/*-----------------------------------------------------------------------------------------*/
+
+/*------------------------------------- DEFINES ------------------------------------------*/
+
 #define F_CPU 16000000UL
 #define BAUDRATE 9600
 #define BAUD_PRESCALER (((F_CPU / (BAUDRATE * 16UL))) - 1)
@@ -9,27 +17,51 @@
 #define LCD_CPIN  PINB    //LCD COMMANDS PIN
 #define LCD_RS  0       //LCD RS
 #define LCD_EN  1       //LCD EN
+#define ASCII_OFFSET 0x30 //OFFSET TO CONVERT CHAR FROM SERIAL TO ASCII
+#define ASCII_CONVERT(x) (x+ASCII_OFFSET) //FUNCTION TO CONVERT FROM SERIAL TO ASCII
+#define THRESHOLD_TEMPERATURE 57.00
+#define THRESHOLD_AIR 200.00
 
-// LIBRARIES
+/* ----------------------------------- INCLUDES -------------------------------------*/
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include <avr/io.h>
-
 #include <util/delay.h>
 #include <math.h>
-
 #include <avr/interrupt.h>
-
 #include "semphr.h"
 #include "timers.h"
+#include <stdlib.h>
 
+/* ----------------------------------- ENUMS -------------------------------------*/
+
+enum enumState
+{
+	ON,
+	OFF
+};
+
+enum enumActions
+{
+	ALARM_ON,
+	ALARM_OFF,
+	BUZZER_ON,
+	BUZZER_OFF,
+	FAN_ON,
+	FAN_OFF
+};
+
+/* ----------------------------------- GLOBAL DECLARATIONS -------------------------------------*/
+float temperature;
+float air;
 
 //Handlers of the task
-TaskHandle_t serialInterruptTaskHandle = NULL; 
-TaskHandle_t temperatureReadTaskHandle = NULL;
-TaskHandle_t temperatureSendTaskHandle = NULL;
-TaskHandle_t AirReadTaskHandle = NULL;
-TaskHandle_t AirSendTaskHandle = NULL;
+TaskHandle_t serialFromISRTaskHandle; 
+TaskHandle_t temperatureReadTaskHandle;
+TaskHandle_t temperatureSendTaskHandle;
+TaskHandle_t AirReadTaskHandle;
+TaskHandle_t AirSendTaskHandle;
 
 //QueuesHandler
 QueueHandle_t xCharQueue;
@@ -42,182 +74,125 @@ SemaphoreHandle_t xSemaphoreADC;
 //Timer Handler
 TimerHandle_t xTimerReadings;
 
- 
+//State Variable
+uint8_t alarmState;
+uint8_t stateBuzzer;
+uint8_t stateFan;
 
-enum enumState
-{
-	ON,
-	OFF,	
-};
+/* ----------------------------------- FUNCTION DECLARATIONS -------------------------------------*/
+static void alarmON(); 
+static void alarmOFF();
+static void buzzerToggle(); 
+static void fanToggle(); 
+static void UART_init();
+static void UART_sendString(const char* data);
+static void UART_sendChar(char data);
+static void LCD_putValue(unsigned char val);
+static void LCD_sendCommand( unsigned char cmnd);
+static void LCD_sendData( unsigned char data);
+static void LCD_clear();
+/* ----------------------------------- NOT USED -------------------------------------*/
+/*
+static void LCD_showCursor();
+static void LCD_hideCursor();
+*/
+static void LCD_init();
+static void LCD_goToXY(unsigned char x, unsigned char y);
+static void LCD_print(char* str);
+static void portInit (void);
+static void ADC_setupToReadTemp(void);
+static void ADC_setupToReadAir(void);
+static float ADC_read();
+static char *generateArrayTemperature(unsigned char d1, unsigned char d2, unsigned char d3, unsigned char d4); //to use it in LCD writing
+static char *convertAndWriteTemp(float value); //convert Analog value in digital
+static char *generateArrayAir(unsigned char d1, unsigned char d2, unsigned char d3); //to use it in LCD writing
+static char *convertAndWriteAir(float value); //convert Analog value in digital
 
-enum enumActions
-{
-	ALARM_ON,
-	ALARM_OFF,
-	BUZZER_ON,
-	BUZZER_OFF,
-	FAN_ON,
-	FAN_OFF,	
-};
+/* ----------------------------------- FREE RTOS TASK DECLARATION -------------------------------------*/
 
-uint8_t alarmState; = enumState.OFF; 
-uint8_t stateBuzzer; = enumState.OFF;
-uint8_t stateFan; = enumState.OFF;
+void serialFromISRTask (void *parameters); 
+void temperatureReadTask(void* parameter);
+void temperatureSendTask (void* parameter);
+void airReadTask(void* parameter);
+void airSendTask (void* parameter);
 
-float temperature;
-float air;
+/* ----------------------------------- FREE RTOS CALLBACK DECLARATION -------------------------------------*/
 
+void vTimerCallback(TimerHandle_t xTimerReadings); //called when timer elapse
 
-void alarmON() {
+/* ----------------------------------- FUNCTION DEFINITIONS -------------------------------------*/
+
+static void alarmON() {
 				
 		UART_sendString("{\"actuator\":\"alarm\",\"value\":\"on\"}\n");
-		alarmState = 1;
-		stateBuzzer = 1;
-		stateFan = 1;
-		PORTD |= 1<<PD2;
-		buzzerTask();
-		fanTask();
+		alarmState = ON;
+		stateBuzzer = ON;
+		stateFan = ON;
+		PORTD |= 1<<PD2; //toggle on a led on the board
+		buzzerToggle();
+		fanToggle();
 }
 
-
-void alarmOFF() {
+static void alarmOFF() {
 		
 		UART_sendString("{\"actuator\":\"alarm\",\"value\":\"off\"}\n");
-		alarmState = 0;
-		PORTD &= (~(1<< PD2));
+		alarmState = OFF;
+		PORTD &= (~(1<< PD2)); //toggle off the led on the board
 		
-		stateBuzzer = 0;
-		stateFan = 0;
-		fanTask();
-		buzzerTask();
+		stateBuzzer = OFF;
+		stateFan = OFF;
+		fanToggle();
+		buzzerToggle();
 	
 }
 
-void buzzerTask() {
+static void buzzerToggle() {
 	for (;;){
 		
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateBuzzer == 0){
 			
-			TCCR0A &= (~(1 << 1 | 1 << 7 | 1 << 8));
+			//stop the timer
+			TCCR0A &= (~(1 << 1 | 1 << 7 | 1 << 8)); 
 			TCCR0B &= (~(1 << 1 | 1 << 2));
 		}
-		else { //Esegui la PWM
-		
+		else { //Start the PWM
+		//Setup the timer
 		OCR0A = 127;
 		TCCR0A = 0b11000001;
 		TCCR0B = 0b00000011;
-		
-		}
-		
+		}	
 	}
 }
 
-
-
-void fanTask() {
+static void fanToggle() {
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateFan == 0){
-			PORTB &= (~(1 << PB3));
+			PORTB &= (~(1 << PB3)); //stop the fan
 		}
 		else {
-			
 			PORTB |= (1 << PB3); //ENABLE FAN
-			
-			PORTB |= (1 << PB2);
-			PORTB &= (~(1<< PB4));
+			PORTB |= (1 << PB2); //5v
+			PORTB &= (~(1<< PB4)); //0v
 			}
 		}
-		
 
-
-
-ISR (USART_RX_vect) {
-	
-	signed char cChar;
-	
-	cChar = UDR0;
-	
-		
-	//Due righe che servono sempre per lo YIELD delle task di FREERTOS
-	BaseType_t xHigherPriorityTaskWoken;
-	xHigherPriorityTaskWoken = pdFALSE;
-	
-	//La coda serve per scambiare messaggi tra le task. 
-	//Penso che per altre task si possa utilizzare anche il suspend ed il resume. 
-	xQueueSendFromISR( xCharQueue, &cChar, &xHigherPriorityTaskWoken );
-		
-	//Serve sempre per lo yield. Sulla documentazione è scritto come un'altra funzione, ma per atmega328p è questa. 
-	if( xHigherPriorityTaskWoken != pdFALSE ) {
-		taskYIELD();
-	}
-	
-		
-}
-
-
-
-void serialInterruptTask (void *parameters) {
-		
-	char *pcString; //where the queue receive the msg.
-	uint8_t commandReceived;
-	
-	for( ;; ) {
-		/* Block on the queue to wait for data to arrive. */
-		xQueueReceive( xCharQueue, &pcString, portMAX_DELAY );
-		
-		commandReceived  = pcString - 0x30; //Gives the number from exadecimal to Ascii
-		
-		switch (commandReceived) {
-			case enumActions.ALARM_ON:
-				alarmON();
-				break;//causa l'uscita immediata dallo switch
-			case enumActions.ALARM_OFF:
-				alarmOFF();
-				break;
-			case enumActions.BUZZER_ON:
-				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
-				stateBuzzer = 1;
-				buzzerTask();
-				break;
-			case enumActions.BUZZER_OFF:
-				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
-				stateBuzzer = 0;
-				buzzerTask();
-				break;
-			case enumActions.FAN_ON:
-				UART_sendString("{\"actuator\":\"fan\",\"value\":\"on\"}\n");
-				stateFan = 1;
-				fanTask();
-				break;
-			case enumActions.FAN_OFF:
-				UART_sendString("{\"actuator\":\"fan\",\"value\":\"off\"}\n");
-				stateFan = 0;
-				fanTask();
-				break;
-			default:
-			break;
-		}
-			
-	}
-}
-
-void UART_init()
+static void UART_init()
 {
-	// Imposta la velocità di trasmissione
+	// Setup transmission speed
 	UBRR0H = (BAUD_PRESCALER >> 8);
 	UBRR0L = BAUD_PRESCALER;
 	
-	// Abilita la trasmissione e la ricezione
+	// Enable transmission and receiving (FULL DUPLEX)
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 	
-	// Imposta il formato dei dati: 8 bit di dati, 1 bit di stop
+	// Setup data format: 8 bit data, 1 stop bit
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
-void UART_sendString(const char* data)
+static void UART_sendString(const char* data)
 {
-	// Invia carattere per carattere fino a quando non si raggiunge il terminatore null
+	//Send character until null terminator
 	while (*data != '\0')
 	{
 		UART_sendChar(*data);
@@ -225,16 +200,16 @@ void UART_sendString(const char* data)
 	}
 }
 
-void UART_sendChar(char data)
+static void UART_sendChar(char data)
 {
-	// Attendi che il buffer di trasmissione sia vuoto
+	//Wait for the transmission buffer is empty
 	while (!(UCSR0A & (1 << UDRE0)));
 	
-	// Carica il dato nel buffer di trasmissione
+	//Load the transmission buffer
 	UDR0 = data;
 }
 
-void lcd_putValue(unsigned char val)
+static void LCD_putValue(unsigned char val)
 {
   LCD_DPRT &= 0x0F;
   LCD_DPRT |= (val&0xF0);     //send cmnd to data port
@@ -251,41 +226,40 @@ void lcd_putValue(unsigned char val)
   _delay_us(100);     //wait to make enable wide    
 }
 
-//*******************************************************
-void lcdCommand( unsigned char cmnd )
+static void LCD_sendCommand( unsigned char cmnd )
 { 
   LCD_CPRT &= ~ (1<<LCD_RS);    //RS = 0 for command  
-  lcd_putValue(cmnd);
+  LCD_putValue(cmnd);
 }
 
-//*******************************************************
-void lcdData( unsigned char data )
+static void LCD_sendData( unsigned char data )
 {
   LCD_CPRT |= (1<<LCD_RS);    //RS = 1 for data   
-  lcd_putValue(data);  
+  LCD_putValue(data);  
 }
 
-void lcd_clear()
+static void LCD_clear()
 {
-  lcdCommand(0x01);
+  LCD_sendCommand(0x01);
   _delay_us(1700);
 }
 
-void lcd_showCursor()
+/* ----------------------------------- NOT USED -------------------------------------*/
+/*
+static void LCD_showCursor()
 {
-  lcdCommand(0x0E);
+  LCD_sendCommand(0x0E);
   _delay_us(50);
 }
 
-void lcd_hideCursor()
+static void LCD_hideCursor()
 {
-  lcdCommand(0x0C);
+  LCD_sendCommand(0x0C);
   _delay_us(50);
 }
+*/
 
-//*******************************************************
-
-void lcd_init()
+static void LCD_init()
 {
   LCD_DDDR |= 0xF0;
   LCD_CDDR |= (1<<LCD_RS)|(1<<LCD_EN);
@@ -293,63 +267,57 @@ void lcd_init()
   LCD_CPRT &=~(1<<LCD_EN);  //LCD_EN = 0
   _delay_us(2000);      //wait for init.
 
-  lcdCommand(0x33); //send $33 for init.
-  lcdCommand(0x32); //send $32 for init
-  lcdCommand(0x28); //init. LCD 2 line,5*7 matrix
-  lcdCommand(0x0C); //display on, cursor on
-  lcdCommand(0x06); //shift cursor right
+  LCD_sendCommand(0x33); //send $33 for init.
+  LCD_sendCommand(0x32); //send $32 for init
+  LCD_sendCommand(0x28); //init. LCD 2 line,5*7 matrix
+  LCD_sendCommand(0x0C); //display on, cursor on
+  LCD_sendCommand(0x06); //shift cursor right
 
-  lcd_clear();    
+  LCD_clear();    
 }
 
-//*******************************************************
-void lcd_gotoxy(unsigned char x, unsigned char y)
+static void LCD_goToXY(unsigned char x, unsigned char y)
 {  
-  unsigned char firstCharAdr[]={0x80,0xC0,0x94,0xD4};//Table 12-4  
-  lcdCommand(firstCharAdr[y-1] + x - 1);
+  unsigned char firstCharAdr[]={0x80,0xC0,0x94,0xD4};
+  LCD_sendCommand(firstCharAdr[y-1] + x - 1);
   _delay_us(100); 
 }
 
-//*******************************************************
-void lcd_print( char * str )
+static void LCD_print( char * str )
 {
   unsigned char i = 0;
 
   while(str[i] != 0) //while it is not end of string
   {
-    lcdData(str[i]);
+    LCD_sendData(str[i]);
     i++ ;
   }
 }
 
-//*******************************************************
-
-void port_setup (void){
+static void portInit (void){
 	
 	DDRC = 0; //make Porct C an input for ADC input
-	DDRD = 0xFF;
-	DDRD |= (1<<PD3);
-	DDRB |= (1 << 3) | (1 << 2) | (1 << 4);
+	DDRD = 0xFF; //make port D output
+	//DDRD |= (1<<PD3);
+	DDRB |= (1 << 3) | (1 << 2) | (1 << 4); //make port b output for PB3, PB2, PB4
 	
 }
 
-void adc_setup_temp(void){
+static void ADC_setupToReadTemp(void){
 	DDRC&=~(1<<0);
 	ADCSRA = 0x87; //make ADC enagle and select ck/128
 	ADMUX = 0b11000000; //adc0
 	
 }
 
-void adc_setup_air(void){
+static void ADC_setupToReadAir(void){
 	DDRC&=~(1<<1);
 	ADCSRA = 0x87; //make ADC enagle and select ck/128
 	ADMUX = 0b01000001; //adc1
 	
 }
 
-
-
-float read_adc (){
+static float ADC_read(){
 
 	ADCSRA |= (1<<ADSC); //Start conversion
 	while ((ADCSRA&(1<<ADIF)) ==0); //wait for end of conversion
@@ -358,7 +326,8 @@ float read_adc (){
 	return (ADCL+(ADCH<<8));
 }
 
-char *generate_array_temp(unsigned char d1, unsigned char d2, unsigned char d3, unsigned char d4){
+static char* generateArrayTemperature(unsigned char d1, unsigned char d2, unsigned char d3, unsigned char d4){
+	//Handwriting the array of sending temperature
 	char jsonDataTemperatureTemp [] = "{\"sensor\":\"temperature\",\"value\"";
 	int len1 = sizeof(jsonDataTemperatureTemp);
 	char *jsonDataTemperatureTempT2 = malloc(len1+7);
@@ -367,11 +336,11 @@ char *generate_array_temp(unsigned char d1, unsigned char d2, unsigned char d3, 
 		jsonDataTemperatureTempT2[i] = jsonDataTemperatureTemp[i];
 	}
 	jsonDataTemperatureTempT2 [len1-1] = ':';
-	jsonDataTemperatureTempT2 [len1] = d1+0x30;
-	jsonDataTemperatureTempT2 [len1+1] = d2+0x30;
+	jsonDataTemperatureTempT2 [len1] = ASCII_CONVERT(d1);
+	jsonDataTemperatureTempT2 [len1+1] = ASCII_CONVERT(d2);
 	jsonDataTemperatureTempT2 [len1+2] = '.';
-	jsonDataTemperatureTempT2 [len1+3] = d3+0x30;
-	jsonDataTemperatureTempT2 [len1+4] = d4+0x30;
+	jsonDataTemperatureTempT2 [len1+3] = ASCII_CONVERT(d3);
+	jsonDataTemperatureTempT2 [len1+4] = ASCII_CONVERT(d4);
 	jsonDataTemperatureTempT2 [len1+5] = '}';
 	jsonDataTemperatureTempT2 [len1+6] = '\n';
 	jsonDataTemperatureTempT2 [len1+7] = '\0';
@@ -380,60 +349,57 @@ char *generate_array_temp(unsigned char d1, unsigned char d2, unsigned char d3, 
 	
 }
 
-char *convert_and_write_temp(float value){ //deve creare questo  "{\"sensor\":\"temperature\",\"value\":25}\n"
+static char* convertAndWriteTemp(float value){ //it must create  "{\"sensor\":\"temperature\",\"value\":25}\n"
 	unsigned short x,y,z,w;
 	unsigned char d1,d2,d3,d4;
-	//sono 3 cifre
-
-	//float convert = value *10/93-50;
-
+	
+	//it must take single digit to print in LCD
 	z = value*100;
 	w = z/10;
 	x=w/10;
 	y=x/10;
-
+	
+	//module to take single unit digit
 	d1=y%10;
 	d2=x%10;
 	d3=w%10;
 	d4=z%10;
 
-	lcdData(d1+0x30);
-	lcdData(d2+0x30);
-	lcdData('.');
-	lcdData(d3+0x30);
-	lcdData(d4+0x30);
-	lcdData(223);
+	LCD_sendData(ASCII_CONVERT(d1));
+	LCD_sendData(ASCII_CONVERT(d2));
+	LCD_sendData('.');
+	LCD_sendData(ASCII_CONVERT(d3));
+	LCD_sendData(ASCII_CONVERT(d4));
+	LCD_sendData(223);
 
-	return generate_array_temp(d1, d2, d3, d4);
-
+	return generateArrayTemperature(d1, d2, d3, d4);
 }
 
-char *generate_array_air(unsigned char d1, unsigned char d2, unsigned char d3){
+static char* generateArrayAir(unsigned char d1, unsigned char d2, unsigned char d3){
 	char jsonDataAir [] = "{\"sensor\":\"air\",\"value\"";
-		int len = sizeof(jsonDataAir);
-		char *jsonDataAirT2 = malloc(len+8);
+	int len = sizeof(jsonDataAir);
+	char *jsonDataAirT2 = malloc(len+8);
 		
-		for (int i = 0; i<len; i++){
-			jsonDataAirT2[i] = jsonDataAir[i];
-		}
+	for (int i = 0; i<len; i++){
+		jsonDataAirT2[i] = jsonDataAir[i];
+	}
 
 		
-		jsonDataAirT2 [len-1] = ':';
+	jsonDataAirT2 [len-1] = ':';
 
-		if ((d1+0x30) == '0'){ //Non digerisco gli interi che iniziano per 0.
-			jsonDataAirT2 [len] = d2+0x30;
-			len = len -1;
-			} else {
-			jsonDataAirT2 [len] = d1+0x30;
-			jsonDataAirT2 [len+1] = d2+0x30;
-		}
+	if ((d1+ASCII_OFFSET) == '0'){ //excluding 0 when the value is < 100
+		jsonDataAirT2 [len] = d2+ASCII_OFFSET;
+		len = len -1;
+		} else {
+		jsonDataAirT2 [len] = d1+ASCII_OFFSET;
+		jsonDataAirT2 [len+1] = d2+ASCII_OFFSET;
+	}
 		
+	jsonDataAirT2 [len+2] = d3+ASCII_OFFSET;
 		
-		jsonDataAirT2 [len+2] = d3+0x30;
-		
-		jsonDataAirT2 [len+3] = '.';
-		jsonDataAirT2 [len+4] = '0';
-		jsonDataAirT2 [len+5] = '0';
+	jsonDataAirT2 [len+3] = '.';
+	jsonDataAirT2 [len+4] = '0';
+	jsonDataAirT2 [len+5] = '0';
 		
 	jsonDataAirT2 [len+6] = '}';
 	
@@ -444,32 +410,74 @@ char *generate_array_air(unsigned char d1, unsigned char d2, unsigned char d3){
 	
 }
 
-char *convert_and_write_air(float value){
-	unsigned char d1,d2,d3,d4,d5,d6;
-	//sono 3 cifre
-	unsigned int x,y,z,w;
+static char* convertAndWriteAir(float value){
+	unsigned char d1,d2,d3;
+	//3 digit: 000 -> 999 
+	unsigned int x,y,w;
 	
 	w = value;
 	x=w/10;
 	y=x/10;
 	
-	
 	d1=y%10;
 	d2=x%10;
 	d3=w%10;
 	
+	LCD_sendData(d1+ASCII_OFFSET);
+	LCD_sendData(d2+ASCII_OFFSET);
+	LCD_sendData(d3+ASCII_OFFSET);
 
+	return generateArrayAir(d1, d2, d3);
+}
+
+void serialFromISRTask (void *parameters) {
 	
-	lcdData(d1+0x30);
-	lcdData(d2+0x30);
-	lcdData(d3+0x30);
-
-	return generate_array_air(d1, d2, d3);
+	char *pcString; //where the queue receive the msg.
+	uint8_t commandReceived;
+	
+	for( ;; ) {
+		/* Block on the queue to wait for data to arrive. */
+		xQueueReceive( xCharQueue, &pcString, portMAX_DELAY );
+		
+		commandReceived = pcString - ASCII_OFFSET; //Gives the number from exadecimal to Ascii
+		
+		switch (commandReceived) {
+			case ALARM_ON:
+				alarmON();
+				break;
+			case ALARM_OFF:
+				alarmOFF();
+				break;
+			case BUZZER_ON:
+				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
+				stateBuzzer = 1;
+				buzzerToggle();
+				break;
+			case BUZZER_OFF:
+				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
+				stateBuzzer = OFF;
+				buzzerToggle();
+				break;
+			case FAN_ON:
+				UART_sendString("{\"actuator\":\"fan\",\"value\":\"on\"}\n");
+				stateFan = ON;
+				fanToggle();
+				break;
+			case FAN_OFF:
+				UART_sendString("{\"actuator\":\"fan\",\"value\":\"off\"}\n");
+				stateFan = OFF;
+				fanToggle();
+				break;
+			default:
+				break;
+		}
+		
+	}
 }
 
 void temperatureReadTask(void* parameter) {
 	
-	float threshold = 30.00;
+	float threshold = THRESHOLD_TEMPERATURE;
 	float temperature;
 	
 	for (;;){
@@ -485,8 +493,8 @@ void temperatureReadTask(void* parameter) {
 			{
 				/* We were able to obtain the semaphore and can now access the
 				shared resource. */
-				adc_setup_temp();
-				temperature = read_adc()*10/93-50;
+				ADC_setupToReadTemp();
+				temperature = ADC_read()*10/93-50;
 			
 				/* We have finished accessing the shared resource.  Release the
 				semaphore. */
@@ -496,8 +504,8 @@ void temperatureReadTask(void* parameter) {
 					alarmON();
 				}
 				else {
-					if (alarmState = 1){
-					alarmState = 0;
+					if (alarmState = ON){
+					alarmState = OFF;
 					}
 				}
 			}
@@ -524,11 +532,10 @@ void temperatureReadTask(void* parameter) {
 		
 		
 		
-		}//FOR
+		}
 		
-	}//TEMPERATURE SESNING TASK
+}
 	
-
 void temperatureSendTask (void* parameter){
 	
 	float temperature;
@@ -545,8 +552,8 @@ void temperatureSendTask (void* parameter){
                          ( TickType_t ) 10 ) == pdPASS )
 						 
 			{
-				lcd_gotoxy(6,1);
-				char *jsonDataTemperature = convert_and_write_temp(temperature);
+				LCD_goToXY(6,1);
+				char *jsonDataTemperature = convertAndWriteTemp(temperature);
 				vTaskDelay(pdMS_TO_TICKS(10));
 				UART_sendString(jsonDataTemperature);
 				vTaskDelay(pdMS_TO_TICKS(10));
@@ -562,7 +569,7 @@ void temperatureSendTask (void* parameter){
 
 void airReadTask(void* parameter) {
 	
-	float threshold = 200.00;
+	float threshold = THRESHOLD_AIR;
 	float air;
 	
 	for (;;)
@@ -578,13 +585,22 @@ void airReadTask(void* parameter) {
 				/* We were able to obtain the semaphore and can now access the
 				shared resource. */
 
-				adc_setup_air();
-				air = read_adc();
+				ADC_setupToReadAir();
+				air = ADC_read();
 			
 
 				/* We have finished accessing the shared resource.  Release the
 				semaphore. */
 				xSemaphoreGive( xSemaphoreADC );
+				
+				if (air >= threshold) {
+					alarmON();
+				}
+				else {
+					if (alarmState = ON){
+						alarmState = OFF;
+					}
+				}
 			}
 			else
 			{
@@ -592,9 +608,6 @@ void airReadTask(void* parameter) {
 				the shared resource safely. */
 			}
 		}
-		
-		
-		
 		
 		if( xQueueAirSendings != 0 )
 		{
@@ -614,7 +627,6 @@ void airReadTask(void* parameter) {
 		
 }//READING AIR
 
-
 void airSendTask (void* parameter){
 	
 	float temperature;
@@ -624,15 +636,14 @@ void airSendTask (void* parameter){
 		{
 		 /* Receive a message from the created queue to hold pointers.  Block for 10
 		ticks if a message is not immediately available.  The value is read into a
-		 pointer variable, and as the value received is the address of the xMessage
-		variable, after this call pxRxedPointer will point to xMessage. */
+		 pointer variable, and as the value received is the address*/
 			if( xQueueReceive( xQueueTemperatureSendings,
                          &( temperature ),
                          ( TickType_t ) 10 ) == pdPASS )
 						 
 			{
-				lcd_gotoxy(6,2);
-				char *jsonDataAir = convert_and_write_air(air);
+				LCD_goToXY(6,2);
+				char *jsonDataAir = convertAndWriteAir(air);
 				vTaskDelay(pdMS_TO_TICKS(10));
 				UART_sendString(jsonDataAir);
 				vTaskDelay(pdMS_TO_TICKS(10));
@@ -647,15 +658,7 @@ void airSendTask (void* parameter){
 	}//for
 }//airSendTask
 
- 
- 
- 
-
-
-//************************************
-
-
-void vTimerCallback(xTimerReadings )
+void vTimerCallback(TimerHandle_t xTimerReadings)
  {
 	vTaskResume (temperatureReadTaskHandle);
 	vTaskResume (AirReadTaskHandle);  
@@ -664,19 +667,19 @@ void vTimerCallback(xTimerReadings )
 // MAIN PROGRAM
 int main(void)
 {
-	alarmState = enumState.OFF;
-	stateBuzzer = enumState.OFF;
-	stateFan = enumState.OFF;
+	alarmState = OFF;
+	stateBuzzer = OFF;
+	stateFan = OFF;
 	
-	lcd_init();
+	LCD_init();
 	
-	lcd_print("Temp:");
-	lcd_gotoxy(1,2);
-	lcd_print("Air:");
+	LCD_print("Temp:");
+	LCD_goToXY(1,2);
+	LCD_print("Air:");
 
 	UART_init();
 	
-	port_setup();
+	portInit();
 	
 	xTimerReadings = xTimerCreate ("Timer", pdMS_TO_TICKS( 1000 ), pdTRUE, ( void * ) 0, vTimerCallback);
 
@@ -707,7 +710,7 @@ int main(void)
 	xQueueAirSendings = xQueueCreate( 2, sizeof (float) );
 	xQueueTemperatureSendings = xQueueCreate( 2, sizeof (float) );
 			
-	xTaskCreate(serialInterruptTask, "serialInterruptTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &serialInterruptTaskHandle);
+	xTaskCreate(serialFromISRTask, "serialFromISRTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &serialFromISRTaskHandle);
 	
 	xTaskCreate(temperatureReadTask, "temperatureReadTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &temperatureReadTaskHandle);
 	
@@ -732,4 +735,30 @@ int main(void)
 // IDLE TASK
 void vApplicationIdleHook(void){
 	// THIS RUNS WHILE NO OTHER TASK RUNS
+}
+
+
+/* ----------------------------------- ISR -------------------------------------*/
+
+//INTERRUPT SERVICE ROUTINE
+ISR (USART_RX_vect) {
+	
+	signed char cChar;
+	
+	cChar = UDR0;
+	
+	
+	//Due righe che servono sempre per lo YIELD delle task di FREERTOS
+	BaseType_t xHigherPriorityTaskWoken;
+	xHigherPriorityTaskWoken = pdFALSE;
+	
+	//La coda serve per scambiare messaggi tra le task.
+	//Penso che per altre task si possa utilizzare anche il suspend ed il resume.
+	xQueueSendFromISR( xCharQueue, &cChar, &xHigherPriorityTaskWoken );
+	
+	//Serve sempre per lo yield. Sulla documentazione è scritto come un'altra funzione, ma per atmega328p è questa.
+	if( xHigherPriorityTaskWoken != pdFALSE ) {
+		taskYIELD();
+	}
+		
 }

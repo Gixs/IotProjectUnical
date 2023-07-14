@@ -22,7 +22,9 @@ main.d main.o: .././main.c ../FreeRTOS_Source/include/FreeRTOS.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\util\delay_basic.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\math.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\interrupt.h \
- ../FreeRTOS_Source/include/semphr.h ../FreeRTOS_Source/include/queue.h
+ ../FreeRTOS_Source/include/semphr.h ../FreeRTOS_Source/include/queue.h \
+ ../FreeRTOS_Source/include/timers.h ../FreeRTOS_Source/include/task.h \
+ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdlib.h
 
 ../FreeRTOS_Source/include/FreeRTOS.h:
 
@@ -77,3 +79,9 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 ../FreeRTOS_Source/include/semphr.h:
 
 ../FreeRTOS_Source/include/queue.h:
+
+../FreeRTOS_Source/include/timers.h:
+
+../FreeRTOS_Source/include/task.h:
+
+c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdlib.h:
