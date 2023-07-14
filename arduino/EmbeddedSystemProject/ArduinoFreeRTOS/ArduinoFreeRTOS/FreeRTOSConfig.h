@@ -75,12 +75,21 @@
 #define configTICK_RATE_HZ			( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 4 )
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 85 )
-#define configTOTAL_HEAP_SIZE		( (size_t ) ( 1500 ) )
+#define configTOTAL_HEAP_SIZE		( (size_t ) ( 1400 ) )
 #define configMAX_TASK_NAME_LEN		( 8 )
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		1
 #define configIDLE_SHOULD_YIELD		1
 #define configQUEUE_REGISTRY_SIZE	1
+
+/* FreeRTOS software timer. */
+#define configUSE_TIMERS				1
+#define configTIMER_TASK_PRIORITY		2
+#define configTIMER_QUEUE_LENGTH		5
+#define configTIMER_TASK_STACK_DEPTH	configMINIMAL_STACK_SIZE
+
+
+
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 		1

@@ -1,16 +1,3 @@
-// LIBRARIES
-#include "FreeRTOS.h"
-#include "task.h"
-#include <avr/io.h>
-
-#include <util/delay.h>
-#include <math.h>
-
-#include <avr/interrupt.h>
-
-#include "semphr.h"
-
-
 #define F_CPU 16000000UL
 #define BAUDRATE 9600
 #define BAUD_PRESCALER (((F_CPU / (BAUDRATE * 16UL))) - 1)
@@ -23,50 +10,90 @@
 #define LCD_RS  0       //LCD RS
 #define LCD_EN  1       //LCD EN
 
+// LIBRARIES
+#include "FreeRTOS.h"
+#include "task.h"
+#include <avr/io.h>
 
-//TaskHandle_t blinkLedHandle = NULL;
-//TaskHandle_t stopBlinkLedHandle = NULL; //Crea il task handler che va passato nel xTaskCreate come ultimo parametro tramite &. Ad es: &myTask1Handle
-//TaskHandle_t myTask2Handle = NULL; 
+#include <util/delay.h>
+#include <math.h>
 
+#include <avr/interrupt.h>
+
+#include "semphr.h"
+#include "timers.h"
+
+
+//Handlers of the task
 TaskHandle_t serialInterruptTaskHandle = NULL; 
+TaskHandle_t temperatureReadTaskHandle = NULL;
+TaskHandle_t temperatureSendTaskHandle = NULL;
+TaskHandle_t AirReadTaskHandle = NULL;
+TaskHandle_t AirSendTaskHandle = NULL;
 
-TaskHandle_t alarmONTaskHandle = NULL;
-TaskHandle_t alarmOFFTaskHandle = NULL;
+//QueuesHandler
+QueueHandle_t xCharQueue;
+QueueHandle_t xQueueTemperatureSendings;
+QueueHandle_t xQueueAirSendings;
 
-TaskHandle_t buzzerTaskHandle = NULL;
-TaskHandle_t fanTaskHandle = NULL;
+//Semaphore handler
+SemaphoreHandle_t xSemaphoreADC;
+
+//Timer Handler
+TimerHandle_t xTimerReadings;
+
+ 
+
+enum enumState
+{
+	ON,
+	OFF,	
+};
+
+enum enumActions
+{
+	ALARM_ON,
+	ALARM_OFF,
+	BUZZER_ON,
+	BUZZER_OFF,
+	FAN_ON,
+	FAN_OFF,	
+};
+
+uint8_t alarmState; = enumState.OFF; 
+uint8_t stateBuzzer; = enumState.OFF;
+uint8_t stateFan; = enumState.OFF;
+
+float temperature;
+float air;
 
 
-QueueHandle_t xIntegerQueue;
-
-int alarmState = 0; //0 if not alarm, 1 if alarm
-
-int stateBuzzer = 0;
-int stateFan = 0;
-
-void alarmON(void* parameter) {
-	for (;;){
-		//la task viene creata ma va subito sospesa in attesa di chiamata. non servono semafori perché non ci sono risorse condivise.
-		vTaskSuspend(NULL); //Quando impostato a Null sospende se stessa.	
+void alarmON() {
+				
+		UART_sendString("{\"actuator\":\"alarm\",\"value\":\"on\"}\n");
 		alarmState = 1;
+		stateBuzzer = 1;
+		stateFan = 1;
 		PORTD |= 1<<PD2;
-		vTaskResume(buzzerTaskHandle);
-		vTaskResume(fanTaskHandle);
-	}
+		buzzerTask();
+		fanTask();
 }
 
-void alarmOFF(void* parameter) {
-	for (;;){
-		//la task viene creata ma va subito sospesa in attesa di chiamata. non servono semafori perché non ci sono risorse condivise.
-		vTaskSuspend(NULL); //Quando impostato a Null sospende se stessa.
+
+void alarmOFF() {
+		
+		UART_sendString("{\"actuator\":\"alarm\",\"value\":\"off\"}\n");
 		alarmState = 0;
 		PORTD &= (~(1<< PD2));
-		vTaskSuspend(buzzerTaskHandle);
-		vTaskSuspend(fanTaskHandle);
-	}
+		
+		stateBuzzer = 0;
+		stateFan = 0;
+		fanTask();
+		buzzerTask();
+	
 }
 
-void buzzerTask(void* parameter) {
+void buzzerTask() {
 	for (;;){
 		
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
@@ -74,15 +101,8 @@ void buzzerTask(void* parameter) {
 			
 			TCCR0A &= (~(1 << 1 | 1 << 7 | 1 << 8));
 			TCCR0B &= (~(1 << 1 | 1 << 2));
-			vTaskSuspend(NULL); 
 		}
 		else { //Esegui la PWM
-		
-		/*PORTD |= (1 << PD3);
-		vTaskDelay(1); //da fare con i timer;
-		PORTD &= (~(1 << PD3));
-		vTaskDelay(1);
-		*/
 		
 		OCR0A = 127;
 		TCCR0A = 0b11000001;
@@ -93,86 +113,24 @@ void buzzerTask(void* parameter) {
 	}
 }
 
-void fanTask(void* parameter) {
-	for (;;){
-		
+
+
+void fanTask() {
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateFan == 0){
 			PORTB &= (~(1 << PB3));
-			vTaskSuspend(NULL);
 		}
-		else { //Esegui la PWM
+		else {
 			
 			PORTB |= (1 << PB3); //ENABLE FAN
 			
 			PORTB |= (1 << PB2);
 			PORTB &= (~(1<< PB4));
 			}
-			
-			//PORTB &= (~(1<<5));
-			//vTaskDelay (pdMS_TO_TICKS(30000));
-			
-			/*
-			digitalWrite(DIRA,HIGH); //one way
-			digitalWrite(DIRB,LOW);
-			delay(750);
-			digitalWrite(DIRA,LOW);
-			digitalWrite(DIRB,HIGH);
-			delay(750);
-			*/
 		}
 		
-	}
 
 
-
-
-/*
-// EXAMPLE BLINKER TASK
-void blinkLED(void* parameter) {	
-	for (;;){	
-	 //la task viene creata ma va subito sospesa in attesa di chiamata. non servono semafori perché non ci sono risorse condivise.
-		vTaskSuspend(NULL); //Quando impostato a Null sospende se stessa.
-		PORTD |= (1 << 3);
-		_delay_ms(75);
-		PORTD &= (~(1<<3));
-		_delay_ms(25);
-		
-		
-		
-		
-		
-		//PORTB |= (1 << PB5);						
-	}
-}
-
-
-void stopBlinkLED(void* parameter) {
-	for (;;) {	
-		vTaskSuspend(NULL); //SUSPEND ITSELF
-		PORTD &= ~(1 << 3);	
-		
-		
-		
-		 &= ~(1 << PB5);	
-	}
-}
-*/
-
- 
-
-/*
-void myTask2(void* parameter){
-
-	for (;;){
-		vTaskDelay(pdMS_TO_TICKS( 5000 )); 
-		vTaskSuspend (myTask1Handle); //COME SOSPENDERE UNA TASK
-		vTaskDelay(pdMS_TO_TICKS( 5000 ));
-		vTaskResume (myTask1Handle); //COME FARLA AVVIARE DI NUOVO
-		
-	}
-}
-*/
 
 ISR (USART_RX_vect) {
 	
@@ -180,7 +138,6 @@ ISR (USART_RX_vect) {
 	
 	cChar = UDR0;
 	
-	//UART_sendString("Interrupt");
 		
 	//Due righe che servono sempre per lo YIELD delle task di FREERTOS
 	BaseType_t xHigherPriorityTaskWoken;
@@ -188,11 +145,8 @@ ISR (USART_RX_vect) {
 	
 	//La coda serve per scambiare messaggi tra le task. 
 	//Penso che per altre task si possa utilizzare anche il suspend ed il resume. 
-	xQueueSendFromISR( xIntegerQueue, &cChar, &xHigherPriorityTaskWoken );
-	
-	//xSemaphoreGiveFromISR( xBinarySemaphore, &xHigherPriorityTaskWoken );
-	
-	
+	xQueueSendFromISR( xCharQueue, &cChar, &xHigherPriorityTaskWoken );
+		
 	//Serve sempre per lo yield. Sulla documentazione è scritto come un'altra funzione, ma per atmega328p è questa. 
 	if( xHigherPriorityTaskWoken != pdFALSE ) {
 		taskYIELD();
@@ -206,47 +160,41 @@ ISR (USART_RX_vect) {
 void serialInterruptTask (void *parameters) {
 		
 	char *pcString; //where the queue receive the msg.
+	uint8_t commandReceived;
 	
 	for( ;; ) {
 		/* Block on the queue to wait for data to arrive. */
-		xQueueReceive( xIntegerQueue, &pcString, portMAX_DELAY );
+		xQueueReceive( xCharQueue, &pcString, portMAX_DELAY );
 		
-		uint8_t commandReceived  = pcString - 0x30; //Gives the number from exadecimal to Ascii
+		commandReceived  = pcString - 0x30; //Gives the number from exadecimal to Ascii
 		
 		switch (commandReceived) {
-			case 0:
-			UART_sendString("{\"actuator\":\"alarm\",\"value\":\"on\"}\n");
-			stateBuzzer = 1;
-			stateFan = 1;
-			PORTD |= 1<<PD2;
-			vTaskResume(buzzerTaskHandle);
-			vTaskResume(fanTaskHandle);
-			break;//causa l'uscita immediata dallo switch
-			case 1:
-			UART_sendString("{\"actuator\":\"alarm\",\"value\":\"off\"}\n");
-			PORTD &= (~(1<< PD2));
-			stateBuzzer = 0;
-			stateFan = 0;
-			break;
-			case 2:
-			UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
-			stateBuzzer = 1;
-			vTaskResume(buzzerTaskHandle);
-			break;
-			case 3:
-			UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
-			stateBuzzer = 0;
-			//vTaskSuspend(buzzerTaskHandle);
-			break;
-			case 4:
-			UART_sendString("{\"actuator\":\"fan\",\"value\":\"on\"}\n");
-			stateFan = 1;
-			vTaskResume(fanTaskHandle);
-			break;
-			case 5:
-			UART_sendString("{\"actuator\":\"fan\",\"value\":\"off\"}\n");
-			stateFan = 0;
-			break;
+			case enumActions.ALARM_ON:
+				alarmON();
+				break;//causa l'uscita immediata dallo switch
+			case enumActions.ALARM_OFF:
+				alarmOFF();
+				break;
+			case enumActions.BUZZER_ON:
+				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
+				stateBuzzer = 1;
+				buzzerTask();
+				break;
+			case enumActions.BUZZER_OFF:
+				UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
+				stateBuzzer = 0;
+				buzzerTask();
+				break;
+			case enumActions.FAN_ON:
+				UART_sendString("{\"actuator\":\"fan\",\"value\":\"on\"}\n");
+				stateFan = 1;
+				fanTask();
+				break;
+			case enumActions.FAN_OFF:
+				UART_sendString("{\"actuator\":\"fan\",\"value\":\"off\"}\n");
+				stateFan = 0;
+				fanTask();
+				break;
 			default:
 			break;
 		}
@@ -286,82 +234,6 @@ void UART_sendChar(char data)
 	UDR0 = data;
 }
 
-
-// MAIN PROGRAM
-int main(void)
-{
-	
-	UART_init();
-	
-	DDRD = 0xFF;
-	
-	DDRD |= (1<<PD3);
-	
-	DDRB |= (1 << 3) | (1 << 2) | (1 << 4);
-	
-	//DDRB |= (1 << PB5);
-	
-	xIntegerQueue = xQueueCreate( 10, sizeof( char * ) );
-	
-	
-		
-	// CREATE BLINKER TASK
-	//xTaskCreate(blinkLED, "blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &blinkLedHandle);
-	//xTaskCreate(stopBlinkLED, "stopBlink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &stopBlinkLedHandle);
-	
-	xTaskCreate(alarmON, "alarmON", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &alarmONTaskHandle); 
-	xTaskCreate(alarmOFF, "alarmOFF", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &alarmOFFTaskHandle); 
-	
-	xTaskCreate(buzzerTask, "buzzerTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &buzzerTaskHandle); 
-	xTaskCreate(fanTask, "fanTask", 200, NULL, tskIDLE_PRIORITY, &fanTaskHandle);	
-	
-	
-	//xTaskCreate(myTask2, "myTask2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &myTask2Handle);
-		
-	xTaskCreate(serialInterruptTask, "serialInterruptTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &serialInterruptTaskHandle);
-
-	sei();
-	
-	// START SCHELUDER
-	vTaskStartScheduler();
-		
-	while (1)
-	{
-		
-	}
-
-}
-
-// IDLE TASK
-void vApplicationIdleHook(void){
-	// THIS RUNS WHILE NO OTHER TASK RUNS
-}
-
-
-
-
-
-
-
-/*
-
-
-float temperature;
-float air;
-
-float _rzero;
-
-//TODO La resistenza montata sul Flying-Fish è di 20kmOhm
-#define MQ135_PULLDOWNRES 20000
-
-//TODO Spiegare questi parametri
-#define PARA 116.6020682
-#define PARB 2.769034857
-
-//GLOBAL CO2 JUNE 2023
-#define ATMOCO2 420.13 
-
-
 void lcd_putValue(unsigned char val)
 {
   LCD_DPRT &= 0x0F;
@@ -395,7 +267,7 @@ void lcdData( unsigned char data )
 
 void lcd_clear()
 {
-  lcdCommand(0x01); 
+  lcdCommand(0x01);
   _delay_us(1700);
 }
 
@@ -452,254 +324,412 @@ void lcd_print( char * str )
 
 //*******************************************************
 
-
-
-
 void port_setup (void){
-  // DDRB = 0xFF; //make port b an output
-  
-  DDRC = 0; //make Porct C an input for ADC input
-  
+	
+	DDRC = 0; //make Porct C an input for ADC input
+	DDRD = 0xFF;
+	DDRD |= (1<<PD3);
+	DDRB |= (1 << 3) | (1 << 2) | (1 << 4);
+	
 }
 
-
-
 void adc_setup_temp(void){
-  DDRC&=~(1<<0);
-  ADCSRA = 0x87; //make ADC enagle and select ck/128
-  ADMUX = 0b11000000; //adc0
-  
+	DDRC&=~(1<<0);
+	ADCSRA = 0x87; //make ADC enagle and select ck/128
+	ADMUX = 0b11000000; //adc0
+	
 }
 
 void adc_setup_air(void){
-  DDRC&=~(1<<1);
-  ADCSRA = 0x87; //make ADC enagle and select ck/128
-  ADMUX = 0b01000001; //adc1
-  
+	DDRC&=~(1<<1);
+	ADCSRA = 0x87; //make ADC enagle and select ck/128
+	ADMUX = 0b01000001; //adc1
+	
 }
 
 
 
 float read_adc (){
 
-  ADCSRA |= (1<<ADSC); //Start conversion
-  while ((ADCSRA&(1<<ADIF)) ==0); //wait for end of conversion
-  ADCSRA |= (1<<ADIF); //clear the ADIF flag
+	ADCSRA |= (1<<ADSC); //Start conversion
+	while ((ADCSRA&(1<<ADIF)) ==0); //wait for end of conversion
+	ADCSRA |= (1<<ADIF); //clear the ADIF flag
 
-  return (ADCL+(ADCH<<8)); 
+	return (ADCL+(ADCH<<8));
 }
 
 char *generate_array_temp(unsigned char d1, unsigned char d2, unsigned char d3, unsigned char d4){
-  char jsonDataTemperatureTemp [] = "{\"sensor\":\"temperature\",\"value\"";
-  int len1 = sizeof(jsonDataTemperatureTemp);
-  char *jsonDataTemperatureTempT2 = malloc(len1+7);
-  
-  for (int i = 0; i<len1; i++){
-    jsonDataTemperatureTempT2[i] = jsonDataTemperatureTemp[i];
-  }
-  jsonDataTemperatureTempT2 [len1-1] = ':';
-  jsonDataTemperatureTempT2 [len1] = d1+0x30;
-  jsonDataTemperatureTempT2 [len1+1] = d2+0x30;
-  jsonDataTemperatureTempT2 [len1+2] = '.';
-  jsonDataTemperatureTempT2 [len1+3] = d3+0x30;
-  jsonDataTemperatureTempT2 [len1+4] = d4+0x30;
-  jsonDataTemperatureTempT2 [len1+5] = '}';
-  jsonDataTemperatureTempT2 [len1+6] = '\n';
-  jsonDataTemperatureTempT2 [len1+7] = '\0';
-  
-  return jsonDataTemperatureTempT2;
-  
+	char jsonDataTemperatureTemp [] = "{\"sensor\":\"temperature\",\"value\"";
+	int len1 = sizeof(jsonDataTemperatureTemp);
+	char *jsonDataTemperatureTempT2 = malloc(len1+7);
+	
+	for (int i = 0; i<len1; i++){
+		jsonDataTemperatureTempT2[i] = jsonDataTemperatureTemp[i];
+	}
+	jsonDataTemperatureTempT2 [len1-1] = ':';
+	jsonDataTemperatureTempT2 [len1] = d1+0x30;
+	jsonDataTemperatureTempT2 [len1+1] = d2+0x30;
+	jsonDataTemperatureTempT2 [len1+2] = '.';
+	jsonDataTemperatureTempT2 [len1+3] = d3+0x30;
+	jsonDataTemperatureTempT2 [len1+4] = d4+0x30;
+	jsonDataTemperatureTempT2 [len1+5] = '}';
+	jsonDataTemperatureTempT2 [len1+6] = '\n';
+	jsonDataTemperatureTempT2 [len1+7] = '\0';
+	
+	return jsonDataTemperatureTempT2;
+	
 }
 
 char *convert_and_write_temp(float value){ //deve creare questo  "{\"sensor\":\"temperature\",\"value\":25}\n"
- unsigned short x,y,z,w;
- unsigned char d1,d2,d3,d4;
-  //sono 3 cifre
+	unsigned short x,y,z,w;
+	unsigned char d1,d2,d3,d4;
+	//sono 3 cifre
 
-  float convert = value *10/93-50;
-  
-  z = convert*100;
-  w = z/10;
-  x=w/10; 
-  y=x/10;
-  
-  d1=y%10;
-  d2=x%10;
-  d3=w%10;
-  d4=z%10;
+	//float convert = value *10/93-50;
 
-  lcdData(d1+0x30);
-  lcdData(d2+0x30);
-  lcdData('.');
-  lcdData(d3+0x30);
-  lcdData(d4+0x30);
-  lcdData(223);
+	z = value*100;
+	w = z/10;
+	x=w/10;
+	y=x/10;
 
-  return generate_array_temp(d1, d2, d3, d4);
-    
-}
+	d1=y%10;
+	d2=x%10;
+	d3=w%10;
+	d4=z%10;
 
-//TODO Spiegare questa funzione https://github.com/Phoenix1747/MQ135/blob/master/MQ135.cpp
-float get_resistance_air(float value) {
-  return ((1023/value) - 1)*MQ135_PULLDOWNRES;
-}
+	lcdData(d1+0x30);
+	lcdData(d2+0x30);
+	lcdData('.');
+	lcdData(d3+0x30);
+	lcdData(d4+0x30);
+	lcdData(223);
 
-float get_r_zero(float value) {
-  return get_resistance_air(value) * pow((ATMOCO2/PARA), (1/PARB));
-}
-
-float get_PPM(float value) {
-  return PARA * pow((get_resistance_air(value)/_rzero), -PARB);
-}
-
-void setup_MQ135(){
-  adc_setup_air();
-  air = read_adc();
-  _rzero = get_r_zero(air);
+	return generate_array_temp(d1, d2, d3, d4);
 
 }
 
 char *generate_array_air(unsigned char d1, unsigned char d2, unsigned char d3){
-  char jsonDataAir [] = "{\"sensor\":\"air\",\"value\"";
-  int len = sizeof(jsonDataAir);
-  char *jsonDataAirT2 = malloc(len+8);
-  
-  for (int i = 0; i<len; i++){
-    jsonDataAirT2[i] = jsonDataAir[i];
-  }
+	char jsonDataAir [] = "{\"sensor\":\"air\",\"value\"";
+		int len = sizeof(jsonDataAir);
+		char *jsonDataAirT2 = malloc(len+8);
+		
+		for (int i = 0; i<len; i++){
+			jsonDataAirT2[i] = jsonDataAir[i];
+		}
 
-  
-  jsonDataAirT2 [len-1] = ':';
+		
+		jsonDataAirT2 [len-1] = ':';
 
-  if ((d1+0x30) == '0'){ //Non digerisco gli interi che iniziano per 0.
-    jsonDataAirT2 [len] = d2+0x30;
-    len = len -1; 
-  } else {
-    jsonDataAirT2 [len] = d1+0x30;
-    jsonDataAirT2 [len+1] = d2+0x30;
-  }
-  
-  
-  jsonDataAirT2 [len+2] = d3+0x30;
-  
-  jsonDataAirT2 [len+3] = '.';
-  jsonDataAirT2 [len+4] = '0';
-  jsonDataAirT2 [len+5] = '0';
-  
-  jsonDataAirT2 [len+6] = '}';
-  
-  jsonDataAirT2 [len+7] = '\n';
-  jsonDataAirT2 [len+8] = '\0';
+		if ((d1+0x30) == '0'){ //Non digerisco gli interi che iniziano per 0.
+			jsonDataAirT2 [len] = d2+0x30;
+			len = len -1;
+			} else {
+			jsonDataAirT2 [len] = d1+0x30;
+			jsonDataAirT2 [len+1] = d2+0x30;
+		}
+		
+		
+		jsonDataAirT2 [len+2] = d3+0x30;
+		
+		jsonDataAirT2 [len+3] = '.';
+		jsonDataAirT2 [len+4] = '0';
+		jsonDataAirT2 [len+5] = '0';
+		
+	jsonDataAirT2 [len+6] = '}';
+	
+	jsonDataAirT2 [len+7] = '\n';
+	jsonDataAirT2 [len+8] = '\0';
 
-  return jsonDataAirT2;
-  
+	return jsonDataAirT2;
+	
 }
 
 char *convert_and_write_air(float value){
- unsigned char d1,d2,d3,d4,d5,d6;
-  //sono 3 cifre
-  unsigned int x,y,z,w;
-  
-  w = value;
-  x=w/10; 
-  y=x/10;
-  
-  
-  d1=y%10;
-  d2=x%10;
-  d3=w%10;
-  
+	unsigned char d1,d2,d3,d4,d5,d6;
+	//sono 3 cifre
+	unsigned int x,y,z,w;
+	
+	w = value;
+	x=w/10;
+	y=x/10;
+	
+	
+	d1=y%10;
+	d2=x%10;
+	d3=w%10;
+	
 
-  
-  lcdData(d1+0x30);
-  lcdData(d2+0x30);
-  lcdData(d3+0x30);
+	
+	lcdData(d1+0x30);
+	lcdData(d2+0x30);
+	lcdData(d3+0x30);
 
-  return generate_array_air(d1, d2, d3);
+	return generate_array_air(d1, d2, d3);
 }
+
+void temperatureReadTask(void* parameter) {
+	
+	float threshold = 30.00;
+	float temperature;
+	
+	for (;;){
+		
+		vTaskSuspend(NULL);
+		
+		if( xSemaphoreADC != NULL )
+		{
+        /* See if we can obtain the semaphore.  If the semaphore is not
+        available wait 10 ticks to see if it becomes free. */
+		
+			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 100 ) == pdTRUE )
+			{
+				/* We were able to obtain the semaphore and can now access the
+				shared resource. */
+				adc_setup_temp();
+				temperature = read_adc()*10/93-50;
+			
+				/* We have finished accessing the shared resource.  Release the
+				semaphore. */
+				xSemaphoreGive( xSemaphoreADC );
+			
+				if (temperature >= threshold) {
+					alarmON();
+				}
+				else {
+					if (alarmState = 1){
+					alarmState = 0;
+					}
+				}
+			}
+			else
+			{
+				/* We could not obtain the semaphore and can therefore not access
+				the shared resource safely. */
+			}
+		}
+				
+		if( xQueueTemperatureSendings != 0 )
+		{
+        /* Send an unsigned long.  Wait for 10 ticks for space to become
+        available if necessary. */
+			if( xQueueSend( xQueueTemperatureSendings,
+						   ( void * ) &temperature,
+						   ( TickType_t ) 100 ) != pdPASS )
+			{
+				/* Failed to post the message, even after 100 ticks. */
+			}
+		}
+		
+		
+		
+		
+		
+		}//FOR
+		
+	}//TEMPERATURE SESNING TASK
+	
+
+void temperatureSendTask (void* parameter){
+	
+	float temperature;
+	for (;;)
+	{
+		if( xQueueTemperatureSendings != NULL )
+		{
+		 /* Receive a message from the created queue to hold pointers.  Block for 10
+		ticks if a message is not immediately available.  The value is read into a
+		 pointer variable, and as the value received is the address of the xMessage
+		variable, after this call pxRxedPointer will point to xMessage. */
+			if( xQueueReceive( xQueueTemperatureSendings,
+                         &( temperature ),
+                         ( TickType_t ) 10 ) == pdPASS )
+						 
+			{
+				lcd_gotoxy(6,1);
+				char *jsonDataTemperature = convert_and_write_temp(temperature);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				UART_sendString(jsonDataTemperature);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				free(jsonDataTemperature);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				
+			}	
+		
+		}
+	
+	}
+}
+
+void airReadTask(void* parameter) {
+	
+	float threshold = 200.00;
+	float air;
+	
+	for (;;)
+	{
+		vTaskSuspend(NULL);
+		
+		if( xSemaphoreADC != NULL )
+		{
+			/* See if we can obtain the semaphore.  If the semaphore is not
+			available wait 10 ticks to see if it becomes free. */
+			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 100 ) == pdTRUE )
+			{
+				/* We were able to obtain the semaphore and can now access the
+				shared resource. */
+
+				adc_setup_air();
+				air = read_adc();
+			
+
+				/* We have finished accessing the shared resource.  Release the
+				semaphore. */
+				xSemaphoreGive( xSemaphoreADC );
+			}
+			else
+			{
+				/* We could not obtain the semaphore and can therefore not access
+				the shared resource safely. */
+			}
+		}
+		
+		
+		
+		
+		if( xQueueAirSendings != 0 )
+		{
+			/* Send an unsigned long.  Wait for 10 ticks for space to become
+			available if necessary. */
+			if( xQueueSend( xQueueAirSendings,
+						   ( void * ) &air,
+						   ( TickType_t ) 100 ) != pdPASS )
+			{
+				/* Failed to post the message, even after 10 ticks. */
+			}
+		}
+		
+		
+		
+	}//FOR
+		
+}//READING AIR
+
+
+void airSendTask (void* parameter){
+	
+	float temperature;
+	for (;;)
+	{	
+		if( xQueueTemperatureSendings != NULL )
+		{
+		 /* Receive a message from the created queue to hold pointers.  Block for 10
+		ticks if a message is not immediately available.  The value is read into a
+		 pointer variable, and as the value received is the address of the xMessage
+		variable, after this call pxRxedPointer will point to xMessage. */
+			if( xQueueReceive( xQueueTemperatureSendings,
+                         &( temperature ),
+                         ( TickType_t ) 10 ) == pdPASS )
+						 
+			{
+				lcd_gotoxy(6,2);
+				char *jsonDataAir = convert_and_write_air(air);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				UART_sendString(jsonDataAir);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				free(jsonDataAir);
+				vTaskDelay(pdMS_TO_TICKS(10));
+				
+				
+			}	
+		
+		}
+	
+	}//for
+}//airSendTask
+
+ 
+ 
+ 
+
 
 //************************************
 
-void UART_init()
+
+void vTimerCallback(xTimerReadings )
+ {
+	vTaskResume (temperatureReadTaskHandle);
+	vTaskResume (AirReadTaskHandle);  
+ }
+ 
+// MAIN PROGRAM
+int main(void)
 {
-    // Imposta la velocità di trasmissione
-    UBRR0H = (BAUD_PRESCALER >> 8);
-    UBRR0L = BAUD_PRESCALER;
-    
-    // Abilita la trasmissione e la ricezione
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-    
-    // Imposta il formato dei dati: 8 bit di dati, 1 bit di stop
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	alarmState = enumState.OFF;
+	stateBuzzer = enumState.OFF;
+	stateFan = enumState.OFF;
+	
+	lcd_init();
+	
+	lcd_print("Temp:");
+	lcd_gotoxy(1,2);
+	lcd_print("Air:");
+
+	UART_init();
+	
+	port_setup();
+	
+	xTimerReadings = xTimerCreate ("Timer", pdMS_TO_TICKS( 1000 ), pdTRUE, ( void * ) 0, vTimerCallback);
+
+         if( xTimerReadings == NULL )
+         {
+             /* The timer was not created. */
+         }
+         else
+         {
+             /* Start the timer.  No block time is specified, and
+             even if one was it would be ignored because the RTOS
+             scheduler has not yet been started. */
+             if( xTimerStart( xTimerReadings, 0) != pdPASS )
+             {
+                 /* The timer could not be set into the Active
+                 state. */
+             }
+         }
+	
+    // Attempt to create a semaphore.
+    xSemaphoreADC = xSemaphoreCreateBinary();
+
+	xSemaphoreGive(xSemaphoreADC);
+
+	
+	xCharQueue = xQueueCreate( 2, sizeof( char * ) );
+	
+	xQueueAirSendings = xQueueCreate( 2, sizeof (float) );
+	xQueueTemperatureSendings = xQueueCreate( 2, sizeof (float) );
+			
+	xTaskCreate(serialInterruptTask, "serialInterruptTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &serialInterruptTaskHandle);
+	
+	xTaskCreate(temperatureReadTask, "temperatureReadTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &temperatureReadTaskHandle);
+	
+	xTaskCreate(temperatureSendTask, "temperatureSendTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &temperatureSendTaskHandle);
+	
+	xTaskCreate(airReadTask, "airReadTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &temperatureReadTaskHandle);
+	
+	xTaskCreate(airSendTask, "airSendTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &AirSendTaskHandle);
+	
+	sei();
+	
+	// START SCHELUDER
+	vTaskStartScheduler();
+		
+	while (1)
+	{
+		
+	}
+
 }
 
-void UART_sendString(const char* data)
-{
-    // Invia carattere per carattere fino a quando non si raggiunge il terminatore null
-    while (*data != '\0')
-    {
-        UART_sendChar(*data);
-        data++;
-    }
+// IDLE TASK
+void vApplicationIdleHook(void){
+	// THIS RUNS WHILE NO OTHER TASK RUNS
 }
-
-void UART_sendChar(char data)
-{
-    // Attendi che il buffer di trasmissione sia vuoto
-    while (!(UCSR0A & (1 << UDRE0)));
-    
-    // Carica il dato nel buffer di trasmissione
-    UDR0 = data;
-}
-
-char UART_receiveChar()
-{
-    // Attendi il completamento della ricezione
-    while (!(UCSR0A & (1 << RXC0)));
-    
-    // Restituisci il dato ricevuto dal buffer di ricezione
-    return UDR0;
-}
-
-//********************************************************
-
-int main (void)
-{
-
-  lcd_init();
-  //usart_init();       //initialize the USART
-  lcd_print("Temp:");
-  lcd_gotoxy(1,2);
-  lcd_print("Air:");
-
-  setup_MQ135(); //need to get _rzero first
-
-  UART_init();
-  
-  while(1){         //do forever
-    adc_setup_temp();  
-    temperature = read_adc();    
-    lcd_gotoxy(6,1);
-    char *jsonDataTemperature = convert_and_write_temp(temperature);
-    _delay_ms(1500);
-    UART_sendString(jsonDataTemperature);
-    _delay_ms(1500);
-    free(jsonDataTemperature);
-    _delay_ms(500);
-
-    adc_setup_air();
-    air = read_adc();
-    lcd_gotoxy(6,2);
-    
-    char *jsonDataAir = convert_and_write_air(air);
-    UART_sendString(jsonDataAir);
-    free(jsonDataAir);
-    _delay_ms(500);
-
-    
-
-    
-  }
-  return 0;
-}
-*/
