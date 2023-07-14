@@ -24,8 +24,8 @@
 #define LCD_EN  1       //LCD EN
 
 
-TaskHandle_t blinkLedHandle = NULL;
-TaskHandle_t stopBlinkLedHandle = NULL; //Crea il task handler che va passato nel xTaskCreate come ultimo parametro tramite &. Ad es: &myTask1Handle
+//TaskHandle_t blinkLedHandle = NULL;
+//TaskHandle_t stopBlinkLedHandle = NULL; //Crea il task handler che va passato nel xTaskCreate come ultimo parametro tramite &. Ad es: &myTask1Handle
 //TaskHandle_t myTask2Handle = NULL; 
 
 TaskHandle_t serialInterruptTaskHandle = NULL; 
@@ -49,6 +49,7 @@ void alarmON(void* parameter) {
 		//la task viene creata ma va subito sospesa in attesa di chiamata. non servono semafori perché non ci sono risorse condivise.
 		vTaskSuspend(NULL); //Quando impostato a Null sospende se stessa.	
 		alarmState = 1;
+		PORTD |= 1<<PD2;
 		vTaskResume(buzzerTaskHandle);
 		vTaskResume(fanTaskHandle);
 	}
@@ -59,6 +60,7 @@ void alarmOFF(void* parameter) {
 		//la task viene creata ma va subito sospesa in attesa di chiamata. non servono semafori perché non ci sono risorse condivise.
 		vTaskSuspend(NULL); //Quando impostato a Null sospende se stessa.
 		alarmState = 0;
+		PORTD &= (~(1<< PD2));
 		vTaskSuspend(buzzerTaskHandle);
 		vTaskSuspend(fanTaskHandle);
 	}
@@ -69,14 +71,22 @@ void buzzerTask(void* parameter) {
 		
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateBuzzer == 0){
+			
+			TCCR0A &= (~(1 << 1 | 1 << 7 | 1 << 8));
+			TCCR0B &= (~(1 << 1 | 1 << 2));
 			vTaskSuspend(NULL); 
 		}
 		else { //Esegui la PWM
 		
-		PORTD |= (1 << PD3);
+		/*PORTD |= (1 << PD3);
 		vTaskDelay(1); //da fare con i timer;
 		PORTD &= (~(1 << PD3));
 		vTaskDelay(1);
+		*/
+		
+		OCR0A = 127;
+		TCCR0A = 0b11000001;
+		TCCR0B = 0b00000011;
 		
 		}
 		
@@ -88,18 +98,15 @@ void fanTask(void* parameter) {
 		
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateFan == 0){
+			PORTB &= (~(1 << PB3));
 			vTaskSuspend(NULL);
 		}
 		else { //Esegui la PWM
 			
+			PORTB |= (1 << PB3); //ENABLE FAN
 			
 			PORTB |= (1 << PB2);
-			PORTB &= (~(1<< PB3));
-			_delay_ms(750);
-				
-			PORTB &= (~(1<< PB2));
-			PORTB |= (1 << PB3);
-			_delay_ms(750);
+			PORTB &= (~(1<< PB4));
 			}
 			
 			//PORTB &= (~(1<<5));
@@ -116,11 +123,11 @@ void fanTask(void* parameter) {
 		}
 		
 	}
-}
 
 
 
 
+/*
 // EXAMPLE BLINKER TASK
 void blinkLED(void* parameter) {	
 	for (;;){	
@@ -138,13 +145,19 @@ void blinkLED(void* parameter) {
 		//PORTB |= (1 << PB5);						
 	}
 }
+
+
 void stopBlinkLED(void* parameter) {
 	for (;;) {	
 		vTaskSuspend(NULL); //SUSPEND ITSELF
 		PORTD &= ~(1 << 3);	
-		PORTB &= ~(1 << PB5);	
+		
+		
+		
+		 &= ~(1 << PB5);	
 	}
 }
+*/
 
  
 
@@ -202,44 +215,39 @@ void serialInterruptTask (void *parameters) {
 		
 		switch (commandReceived) {
 			case 0:
-			UART_sendString("STATE: Alarm ON\n");
+			UART_sendString("{\"actuator\":\"alarm\",\"value\":\"on\"}\n");
 			stateBuzzer = 1;
 			stateFan = 1;
+			PORTD |= 1<<PD2;
 			vTaskResume(buzzerTaskHandle);
 			vTaskResume(fanTaskHandle);
 			break;//causa l'uscita immediata dallo switch
 			case 1:
-			UART_sendString("STATE: Alarm OFF\n");
+			UART_sendString("{\"actuator\":\"alarm\",\"value\":\"off\"}\n");
+			PORTD &= (~(1<< PD2));
 			stateBuzzer = 0;
 			stateFan = 0;
 			break;
 			case 2:
-			UART_sendString("STATE: Buzzer ON\n");
+			UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
 			stateBuzzer = 1;
 			vTaskResume(buzzerTaskHandle);
 			break;
 			case 3:
-			UART_sendString("STATE: Buzzer OFF\n");
+			UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
 			stateBuzzer = 0;
-			vTaskSuspend(buzzerTaskHandle);
+			//vTaskSuspend(buzzerTaskHandle);
 			break;
 			case 4:
-			UART_sendString("STATE: Fan ON\n");
+			UART_sendString("{\"actuator\":\"fan\",\"value\":\"on\"}\n");
 			stateFan = 1;
 			vTaskResume(fanTaskHandle);
 			break;
 			case 5:
-			UART_sendString("STATE: Fan OFF\n");
+			UART_sendString("{\"actuator\":\"fan\",\"value\":\"off\"}\n");
 			stateFan = 0;
-			vTaskSuspend(fanTaskHandle);
 			break;
 			default:
-			UART_sendString("Wrong command. \n");
-			UART_sendString ("String: \n");
-			UART_sendString(commandReceived);
-			UART_sendString ("\n Char: \n");
-			UART_sendChar(commandReceived);
-			UART_sendString ("\n");
 			break;
 		}
 			
@@ -289,21 +297,17 @@ int main(void)
 	
 	DDRD |= (1<<PD3);
 	
-	DDRB |= (1 << PB3) | (1 << PB2) | (1 << PB4);
+	DDRB |= (1 << 3) | (1 << 2) | (1 << 4);
 	
 	//DDRB |= (1 << PB5);
-	
-	PORTB |= (1 << PB4); //ENABLE FAN
-	
-	UART_sendString("Main. \n");
 	
 	xIntegerQueue = xQueueCreate( 10, sizeof( char * ) );
 	
 	
 		
 	// CREATE BLINKER TASK
-	xTaskCreate(blinkLED, "blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &blinkLedHandle);
-	xTaskCreate(stopBlinkLED, "stopBlink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &stopBlinkLedHandle);
+	//xTaskCreate(blinkLED, "blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &blinkLedHandle);
+	//xTaskCreate(stopBlinkLED, "stopBlink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &stopBlinkLedHandle);
 	
 	xTaskCreate(alarmON, "alarmON", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &alarmONTaskHandle); 
 	xTaskCreate(alarmOFF, "alarmOFF", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &alarmOFFTaskHandle); 
