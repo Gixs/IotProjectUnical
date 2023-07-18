@@ -40,6 +40,16 @@
 #define CLIENTID ""
 #endif
 
+enum enumActionsChar
+{
+  c_ALARM_ON = '0',
+  c_ALARM_OFF = '1',
+  c_BUZZER_ON = '2',
+  c_BUZZER_OFF = '3',
+  c_FAN_ON = '4',
+  c_FAN_OFF = '5'
+};
+
 /* Connection defines */
 const char ssid[] = TO_STR(WIFI_SSID);
 const char key[] = TO_STR(KEY);
@@ -81,13 +91,46 @@ void loop()
     Iotlow::reconnect(config);
   }
   Iotlow::client->loop();
-
   if (Serial.available() > 0)
   {
     // read the incoming byte:
     String json = Serial.readStringUntil('\n');
+
     // Serial.println("JSON ricevuto: " + json);
 
-    Iotlow::client->publish("STAT/D001", json.c_str());
+    String jsonToSend;
+    if (json.length() > 3)
+    {
+      jsonToSend = json;
+    }
+    else
+    {
+      char jsonToChar = json.charAt(0);
+      switch (jsonToChar)
+      {
+      case c_ALARM_ON:
+        jsonToSend = "{\"actuator\":\"alarm\",\"value\":\"on\"}";
+        break;
+      case c_ALARM_OFF:
+        jsonToSend = "{\"actuator\":\"alarm\",\"value\":\"off\"}";
+        break;
+      case c_BUZZER_ON:
+        jsonToSend = "{\"actuator\":\"buzzer\",\"value\":\"on\"}";
+        break;
+      case c_BUZZER_OFF:
+        jsonToSend = "{\"actuator\":\"buzzer\",\"value\":\"off\"}";
+        break;
+      case c_FAN_ON:
+        jsonToSend = "{\"actuator\":\"fan\",\"value\":\"on\"}";
+        break;
+      case c_FAN_OFF:
+        jsonToSend = "{\"actuator\":\"fan\",\"value\":\"off\"}";
+        break;
+
+      default:
+        break;
+      }
+    }
+    Iotlow::client->publish("STAT/D001", jsonToSend.c_str());
   }
 }
