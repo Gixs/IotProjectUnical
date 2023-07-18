@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -16,7 +17,12 @@ import 'SensorValueHandler.dart';
 class MqttHandler with ChangeNotifier {
   final ValueNotifier<String> dataTemp = ValueNotifier<String>("");
   final ValueNotifier<String> dataAir = ValueNotifier<String>("");
-  final ValueNotifier<String> alarm = ValueNotifier<String>("");
+  //final ValueNotifier<String> alarm = ValueNotifier<String>("");
+
+  final ValueNotifier<bool> alarm = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> buzzer = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> fan = ValueNotifier<bool>(false);
+
   late MqttServerClient client;
   //late SecurityContext securityContext;
   //late MqttServerSecureConnection secureConnection;
@@ -27,14 +33,16 @@ class MqttHandler with ChangeNotifier {
 
   static const topicAlarm = topicHeader+'Alarm';
 
-  static const topicStat = 'D001';
+  static const topicStat = 'STAT/D001';
   static const topicAir = topicHeader+topicPrefixStat+'Air';
 
-  static const topicVent = topicHeader+topicPrefixCommand+'Vent';
+  static const topicfan = topicHeader+topicPrefixCommand+'fan';
   static const topicBuzzer = topicHeader+topicPrefixCommand+'Buzzer';
 
 
-  bool vent = false;
+  bool stateFan = false;
+  bool stateBuzzer = false;
+  bool stateAlarm = false;
 
 
   Future<Object> connect() async {
@@ -93,19 +101,51 @@ class MqttHandler with ChangeNotifier {
       final pt =
       MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
 
+      Map <String, dynamic> map = mapJson(pt);
+      String jsonType = whichTypeJson(map);
+      if (jsonType.compareTo('actuator') == 0){
+        CmdValue actuator = parseCmd(map);
 
-      if (c[0].topic == topicAlarm){
-        alarm.value = "on";
-        notifyListeners();
-        print(
-            'MQTT_LOGS:: Vecchio log: New data arrived: topic is <${c[0]
-                .topic}>, payload is $pt');
+        if (actuator.actuator == 'alarm'){
+          if (actuator.value == 'on'){
+            stateAlarm = true;
+            alarm.value = true;
+            notifyListeners();
+          }
+          else if (actuator.value == 'off'){
+            stateAlarm = false;
+            alarm.value = false;
+            notifyListeners();
+          }
+        }
+        else if (actuator.actuator == 'buzzer'){
+          if (actuator.value == 'on'){
+            stateBuzzer = true;
+            buzzer.value = true;
+            notifyListeners();
+          }
+          else if (actuator.value == 'off'){
+            stateBuzzer = false;
+            buzzer.value = false;
+            notifyListeners();
+          }
+        }
+        else if (actuator.actuator == 'fan'){
+          if (actuator.value == 'on'){
+            stateFan = true;
+            fan.value = true;
+            notifyListeners();
+          }
+          else if (actuator.value == 'off'){
+            stateFan = false;
+            fan.value = false;
+            notifyListeners();
+          }
+        }
 
       }
-
-      else if (c[0].topic == topicStat){
-        SensorValue sensor = parseSensor(pt);
-
+      else if (jsonType.compareTo('sensor') == 0){
+        SensorValue sensor = parseSensor(map);
 
         if (sensor.sensor == 'temperature') {
           dataTemp.value = sensor.value.toString();
@@ -129,8 +169,9 @@ class MqttHandler with ChangeNotifier {
                   .sensor}>, payload is $sensor.sensorValue');
           print('');
         }
-      }
 
+
+      }
 
     });
 
@@ -162,58 +203,68 @@ class MqttHandler with ChangeNotifier {
   }
 
   void publishMessage(String message) {
-    const pubTopic = 'Gixs/testiamo/esp8266';
+    const pubTopic = 'CMD/D001';
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
 
     if (client.connectionStatus?.state == MqttConnectionState.connected) {
-      client.publishMessage(pubTopic, MqttQos.atMostOnce, builder.payload!);
+      client.publishMessage(pubTopic, MqttQos.atLeastOnce, builder.payload!);
     }
-
-    }
-
-  void stopBuzzer(){
-    final builder = MqttClientPayloadBuilder();
-    String message = 'off';
-    builder.addString(message);
-
-    client.publishMessage(topicBuzzer, MqttQos.atLeastOnce, builder.payload!);
 
   }
 
-  void changeStateVent(){
-    final builder = MqttClientPayloadBuilder();
-    String message;
-    if (vent == false) {
-      message = 'on';
-      vent = true;
-    }
-    else {
-      message = 'off';
-      vent = false;
-    }
-    builder.addString(message);
-
-    client.publishMessage(topicBuzzer, MqttQos.atLeastOnce, builder.payload!);
-
-  }
-
-  bool getStateVent (){
-    return vent;
-  }
-
-  SensorValue parseSensor(String responseBody) {
+  Map <String, dynamic> mapJson (String responseBody){
     Map<String, dynamic> map = jsonDecode(responseBody);
+    return map;
+  }
+
+  String whichTypeJson (Map <String, dynamic> map){
+    return map.keys.first;
+  }
+
+  SensorValue parseSensor(Map<String, dynamic> map) {
 
     SensorValue sensor = SensorValue.fromJson(map);
     return sensor;
   }
 
-  CmdValue parseCmd(String responseBody) {
-    Map<String, dynamic> map = jsonDecode(responseBody);
+  CmdValue parseCmd(Map<String, dynamic> map) {
 
     CmdValue cmd = CmdValue.fromJson(map);
     return cmd;
+  }
+
+  void alarmToggle () {
+    if (stateAlarm == true) {
+      stateAlarm = false;
+      publishMessage('{\"actuator\":\"alarm\",\"value\":\"off\"}');
+    }
+    else {
+      stateAlarm = true;
+      publishMessage('{\"actuator\":\"alarm\",\"value\":\"on\"}');
+    }
+  }
+
+  void buzzerToggle () {
+    if (stateBuzzer == true) {
+      stateBuzzer = false;
+      publishMessage('{\"actuator\":\"buzzer\",\"value\":\"off\"}');
+    }
+    else {
+      stateBuzzer = true;
+      publishMessage('{\"actuator\":\"buzzer\",\"value\":\"on\"}');
+    }
+  }
+
+  void fanToggle () {
+    if (stateFan == true) {
+      stateFan = false;
+      publishMessage('{\"actuator\":\"fan\",\"value\":\"off\"}');
+    }
+    else {
+      stateFan = true;
+      publishMessage('{\"actuator\":\"fan\",\"value\":\"on\"}');
+    }
   }
 
 

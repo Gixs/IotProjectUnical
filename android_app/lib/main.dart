@@ -34,8 +34,6 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
     mqttHandler.connect();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return  MaterialApp(
@@ -82,13 +80,55 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
                 mainAxisSize: MainAxisSize.min,
               children: [
                 ElevatedButton(
-                  onPressed: () => setState(() => mqttHandler.stopBuzzer()),
-                  child: Icon(Icons.crisis_alert),
+                  onPressed: () {
+                    setState(() {
+                      mqttHandler.alarm.value = !mqttHandler.alarm.value;
+                      mqttHandler.alarmToggle();
+                    });
+                  },
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: mqttHandler.alarm,
+                    builder: (BuildContext context, bool value, Widget? child) {
+                      return Icon(
+                        value ? Icons.gpp_good : Icons.upcoming,
+                      );
+                    },
+                  ),
                 ),
                 SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () => setState(() {mqttHandler.stopBuzzer();}),
-                  child: Icon((mqttHandler.getStateVent() == false) ? Icons.air_sharp : Icons.air_rounded),
+                  onPressed: () {
+                    setState(() {
+                      mqttHandler.buzzer.value = !mqttHandler.buzzer.value;
+                      mqttHandler.buzzerToggle();
+                    });
+                  },
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: mqttHandler.buzzer,
+                    builder: (BuildContext context, bool value, Widget? child) {
+                      return Icon(
+                        value ? Icons.volume_off : Icons.campaign,
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: 10),
+
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      mqttHandler.fan.value = !mqttHandler.fan.value;
+                      mqttHandler.fanToggle();
+                    });
+                  },
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: mqttHandler.fan,
+                    builder: (BuildContext context, bool value, Widget? child) {
+                      return Icon(
+                        value ? Icons.mode_fan_off : Icons.heat_pump,
+                      );
+                    },
+                  ),
                 ),
 
               ],
