@@ -33,23 +33,23 @@ namespace Iotlow
 		if (strcmp(actuator, "alarm") == 0)
 		{
 			if (strcmp(value, "on") == 0)
-				Serial.print("0");
+				Serial.print("0\n");
 			if (strcmp(value, "off") == 0)
-				Serial.print("1");
+				Serial.print("1\n");
 		}
 		if (strcmp(actuator, "buzzer") == 0)
 		{
 			if (strcmp(value, "on") == 0)
-				Serial.print("2");
+				Serial.print("2\n");
 			if (strcmp(value, "off") == 0)
-				Serial.print("3");
+				Serial.print("3\n");
 		}
 		if (strcmp(actuator, "fan") == 0)
 		{
 			if (strcmp(value, "on") == 0)
-				Serial.print("4");
+				Serial.print("4\n");
 			if (strcmp(value, "off") == 0)
-				Serial.print("5");
+				Serial.print("5\n");
 		}
 	}
 

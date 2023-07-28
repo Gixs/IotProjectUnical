@@ -41,7 +41,7 @@
 enum enumState
 {
 	OFF = 0,
-	ON = 1
+	ON = 1,
 };
 
 enum enumActions
@@ -51,7 +51,7 @@ enum enumActions
 	BUZZER_ON,
 	BUZZER_OFF,
 	FAN_ON,
-	FAN_OFF
+	FAN_OFF,
 };
 
 enum enumActionsChar
@@ -61,7 +61,7 @@ enum enumActionsChar
 	c_BUZZER_ON = '2',
 	c_BUZZER_OFF = '3',
 	c_FAN_ON = '4',
-	c_FAN_OFF = '5'
+	c_FAN_OFF = '5',
 };
 
 /* ----------------------------------- GLOBAL DECLARATIONS -------------------------------------*/
@@ -162,12 +162,19 @@ ISR (USART_RX_vect) {
 static void alarmON() {
 				
 		alarmState = ON;
-		stateBuzzer = ON;
-		stateFan = ON;
 		PORTD |= 1<<PD2; //toggle on a led on the board
-		buzzerToggle();
-		fanToggle();
-		if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 100 ) == pdTRUE )
+		
+		if (stateBuzzer == OFF){
+			stateBuzzer = ON;
+			buzzerToggle();	
+		}
+		
+		if (stateFan == OFF){
+			stateFan = ON;
+			fanToggle();		
+		}
+				
+		if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 1000 ) == pdTRUE )
 		{
 			UART_sendChar(c_ALARM_ON);
 			UART_sendChar('\n');
@@ -181,10 +188,16 @@ static void alarmOFF() {
 		alarmState = OFF;
 		PORTD &= (~(1<< PD2)); //toggle off the led on the board
 		
-		stateBuzzer = OFF;
-		stateFan = OFF;
-		fanToggle();
-		buzzerToggle();
+		if (stateBuzzer == ON){
+			stateBuzzer = OFF;	
+			buzzerToggle();
+		}
+		
+		if (stateFan == ON){
+			stateFan = OFF;
+			fanToggle();	
+		}
+				
 		if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 100 ) == pdTRUE )
 		{
 			UART_sendChar(c_ALARM_OFF);
@@ -210,6 +223,7 @@ static void buzzerToggle() {
 		//Select clck/32 (from prescaler); WGM22 is clear, it updates OC2B on 0xFF and not on OCRB.
 		TCCR2B |= (1 << CS21) | (1 << CS20); 
 		OCR2B = 0xFF - 120;
+		}
 		
 		if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 100 ) == pdTRUE )
 		{
@@ -217,22 +231,23 @@ static void buzzerToggle() {
 				//UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"off\"}\n");
 				UART_sendChar(c_BUZZER_OFF);
 				UART_sendChar('\n');
+				
 			}
 			else{
 				//UART_sendString("{\"actuator\":\"buzzer\",\"value\":\"on\"}\n");
 				UART_sendChar(c_BUZZER_ON);
 				UART_sendChar('\n');
+				
 				}
 			xSemaphoreGive( xSemaphoreUART );
 		}
-	}	
-		
 }
 
 static void fanToggle() {
 		//Se il buzzer non è impostato dall'esterno o il sistema non è in stato di allarme, il buzzer deve essere spento.
 		if (stateFan == OFF){
 			PORTB &= (~(1 << PB3)); //stop the fan
+			//PORTB &=  (~(1 << PB2));
 		}
 		else {
 			PORTB |= (1 << PB3); //ENABLE FAN
@@ -245,10 +260,12 @@ static void fanToggle() {
 			{
 				UART_sendChar(c_FAN_OFF);
 				UART_sendChar('\n');
+				
 					
 			}else {
 				UART_sendChar(c_FAN_ON);
 				UART_sendChar('\n');
+				
 			}
 			
 			xSemaphoreGive( xSemaphoreUART );
@@ -527,9 +544,15 @@ unsigned char* convertAir(float value){
 }
 
  void LCD_sendAir (unsigned char d1, unsigned char d2, unsigned char d3){
-	LCD_sendData(d1+ASCII_OFFSET);
-	LCD_sendData(d2+ASCII_OFFSET);
-	LCD_sendData(d3+ASCII_OFFSET);
+	LCD_sendData(d1+0x30);
+	LCD_sendData(d2+0x30);
+	LCD_sendData(d3+0x30);
+	LCD_sendData(' ');
+	LCD_sendData(' ');
+	LCD_sendData(' ');
+	LCD_sendData(' ');
+	LCD_sendData(' ');
+	LCD_sendData(' ');
  }
 
 void serialFromISRTask (void *parameters) {
@@ -545,26 +568,38 @@ void serialFromISRTask (void *parameters) {
 		
 		switch (commandReceived) {
 			case ALARM_ON:
-				alarmON();
+				if (alarmState == OFF){
+					alarmON();	
+				}
 				break;
 			case ALARM_OFF:
-				alarmOFF();
+				if (alarmState == ON){
+					alarmOFF();	
+				}
 				break;
 			case BUZZER_ON:
-				stateBuzzer = ON;
-				buzzerToggle();
+				if (stateBuzzer == OFF){
+					stateBuzzer = ON;
+					buzzerToggle();	
+				}
 				break;
 			case BUZZER_OFF:
-				stateBuzzer = OFF;
-				buzzerToggle();
+				if (stateBuzzer == ON){
+					stateBuzzer = OFF;
+					buzzerToggle();
+				}
 				break;
 			case FAN_ON:
-				stateFan = ON;
-				fanToggle();
+				if (stateFan == OFF){
+					stateFan = ON;
+					fanToggle();	
+				}
 				break;
 			case FAN_OFF:
-				stateFan = OFF;
-				fanToggle();
+				if (stateFan == ON){
+					stateFan = OFF;
+					fanToggle();	
+				}
 				break;
 			default:
 				break;
@@ -586,7 +621,7 @@ void temperatureReadTask(void* parameter) {
 		{
         /* See if we can obtain the semaphore.  If the semaphore is not
         available wait 10 ticks to see if it becomes free. */
-			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 100 ) == pdTRUE )
+			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 1000 ) == pdTRUE )
 			{
 				/* We were able to obtain the semaphore and can now access the
 				shared resource. */
@@ -598,7 +633,7 @@ void temperatureReadTask(void* parameter) {
 				/* We have finished accessing the shared resource.  Release the
 				semaphore. */
 				xSemaphoreGive( xSemaphoreADC );
-				if (temperature > THRESHOLD_TEMPERATURE) {
+				if (temperature > THRESHOLD_TEMPERATURE && alarmState == OFF) {
 					alarmON();
 				}
 				else {
@@ -619,7 +654,7 @@ void temperatureReadTask(void* parameter) {
         available if necessary. */
 			if( xQueueSend( xQueueTemperatureSendings,
 						   ( void * ) &temperature,
-						   ( TickType_t ) 100 ) != pdPASS )
+						   ( TickType_t ) 1000 ) != pdPASS )
 			{
 				/* Failed to post the message, even after 100 ticks. */
 			}
@@ -640,7 +675,7 @@ void temperatureSendTask (void* parameter){
 		variable, after this call pxRxedPointer will point to xMessage. */
 			if( xQueueReceive( xQueueTemperatureSendings,
                          &temperature,
-                         100 ) == pdPASS )
+                         1000 ) == pdPASS )
 						 
 			{
 				
@@ -649,18 +684,19 @@ void temperatureSendTask (void* parameter){
 				vTaskDelay(pdMS_TO_TICKS(1500));
 				
 				
-				if( xSemaphoreTake( xSemaphoreLCD, ( TickType_t ) 100 ) == pdTRUE )
+				if( xSemaphoreTake( xSemaphoreLCD, ( TickType_t ) 1000 ) == pdTRUE )
 				{
 					LCD_goToXY(6,1);
 					LCD_sendTemp(values[0], values[1], values[2], values[3]);
+					vTaskDelay(1);
 					xSemaphoreGive( xSemaphoreLCD );
 				}	
 				
-				if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 100 ) == pdTRUE )
+				if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 1000 ) == pdTRUE )
 				{
 					/* We were able to obtain the semaphore and can now access the
 					shared resource. */
-					
+					vTaskDelay(5);
 					UART_sendString(jsonDataTemperature);
 					
 					/* We have finished accessing the shared resource.  Release the
@@ -684,7 +720,7 @@ void airReadTask(void* parameter) {
 		{
 			/* See if we can obtain the semaphore.  If the semaphore is not
 			available wait 10 ticks to see if it becomes free. */
- 			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 100 ) == pdTRUE )
+ 			if( xSemaphoreTake( xSemaphoreADC, ( TickType_t ) 1000 ) == pdTRUE )
 			{
 				/* We were able to obtain the semaphore and can now access the
 				shared resource. */
@@ -698,7 +734,7 @@ void airReadTask(void* parameter) {
 				semaphore. */
 				xSemaphoreGive( xSemaphoreADC );
 				
-				if (air > THRESHOLD_AIR) {
+				if (air > THRESHOLD_AIR && alarmState == OFF) {
 					alarmON();
 				}
 				else {
@@ -720,7 +756,7 @@ void airReadTask(void* parameter) {
 			available if necessary. */
 			if( xQueueSend( xQueueAirSendings,
 						   ( void * ) &air,
-						   ( TickType_t ) 100 ) != pdPASS )
+						   ( TickType_t ) 1000 ) != pdPASS )
 			{
 				/* Failed to post the message, even after 10 ticks. */
 			}
@@ -737,23 +773,25 @@ void airSendTask (void* parameter){
  		{
  			if( xQueueReceive( xQueueAirSendings,
                           &( air ),
-                          ( TickType_t ) 100 ) == pdPASS )		 
+                          ( TickType_t ) 1000 ) == pdPASS )		 
  			{
 				unsigned char *values = convertAir(air);
 				char *jsonDataAir = generateArrayAir(values[0], values[1], values[2]);
 				vTaskDelay(pdMS_TO_TICKS(1500));
 				
-				if( xSemaphoreTake( xSemaphoreLCD, ( TickType_t ) 100 ) == pdTRUE )
+				if( xSemaphoreTake( xSemaphoreLCD, ( TickType_t ) 1000 ) == pdTRUE )
 				{
 					LCD_goToXY(6,2);
 					LCD_sendAir(values[0], values[1], values[2]);
+					vTaskDelay(1);
 					xSemaphoreGive( xSemaphoreLCD );
 				}
 				
-				if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 100 ) == pdTRUE )
+				if( xSemaphoreTake( xSemaphoreUART, ( TickType_t ) 1000 ) == pdTRUE )
 				{
 					/* We were able to obtain the semaphore and can now access the
 					shared resource. */
+					vTaskDelay(5);
 					UART_sendString(jsonDataAir);
 					
 					/* We have finished accessing the shared resource.  Release the
@@ -842,7 +880,7 @@ int main(void)
  	
  	xTaskCreate(airSendTask, "airSendTask", 200, NULL, 2, &AirSendTaskHandle);
  	
- 	xTaskCreate(serialFromISRTask, "serialFromISRTask", 100, NULL, 3, &serialFromISRTaskHandle);
+ 	xTaskCreate(serialFromISRTask, "serialFromISRTask", 100, NULL, 2, &serialFromISRTaskHandle);
 	
 	sei();
 	
